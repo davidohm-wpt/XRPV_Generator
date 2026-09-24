@@ -3,6 +3,62 @@ title WIPOTEC PV Certificate System - Launcher
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
+:: ============================================================
+:: Auto-update source code from GitHub
+:: ============================================================
+:: ใช้ git pull เพื่อดึงเฉพาะไฟล์ที่เปลี่ยน (เร็วมาก)
+:: ไฟล์ที่ถูก ignore (PythonPortable, GTK3-Runtime) จะไม่ถูกลบ
+:: ============================================================
+
+set GIT_EXE=%~dp0PortableGit\bin\git.exe
+set GITHUB_REPO=https://github.com/davidohm-wpt/XRPV_Generator.git
+set GITHUB_BRANCH=main
+
+if exist "!GIT_EXE!" (
+    echo ===================================================
+    echo   Checking for updates from GitHub...
+    echo ===================================================
+
+    if exist "%~dp0.git" (
+        :: มี .git อยู่แล้ว → pull (ดึงเฉพาะที่เปลี่ยน)
+        pushd "%~dp0"
+        "!GIT_EXE!" fetch origin !GITHUB_BRANCH! >nul 2>&1
+        if !errorlevel! neq 0 (
+            echo [Warning] Cannot reach GitHub - using local files.
+        ) else (
+            "!GIT_EXE!" reset --hard origin/!GITHUB_BRANCH! >nul 2>&1
+            if !errorlevel! neq 0 (
+                echo [Warning] git reset failed - using local files.
+            ) else (
+                echo Update completed.
+            )
+        )
+        popd
+    ) else (
+        :: ยังไม่มี .git → clone (ครั้งแรก)
+        echo First time setup - downloading source from GitHub...
+        pushd "%~dp0"
+        "!GIT_EXE!" init >nul 2>&1
+        "!GIT_EXE!" remote add origin "!GITHUB_REPO!" >nul 2>&1
+        "!GIT_EXE!" fetch origin !GITHUB_BRANCH! >nul 2>&1
+        if !errorlevel! neq 0 (
+            echo [Error] Cannot reach GitHub - will use local files.
+        ) else (
+            "!GIT_EXE!" checkout -f !GITHUB_BRANCH! >nul 2>&1
+            if !errorlevel! neq 0 (
+                "!GIT_EXE!" checkout -f -b !GITHUB_BRANCH! origin/!GITHUB_BRANCH! >nul 2>&1
+            )
+            echo Initial download completed.
+        )
+        popd
+    )
+) else (
+    echo ===================================================
+    echo   [Info] PortableGit not found - skipping GitHub update.
+    echo   Expected at: %~dp0PortableGit\bin\git.exe
+    echo ===================================================
+)
+
 :: Clean up previous run artifacts
 if exist "%~dp0weasyprint_check_error.log" del /q "%~dp0weasyprint_check_error.log"
 
@@ -16,7 +72,7 @@ echo ===================================================
 echo   WIPOTEC PV Certificate System - Version !APP_VERSION!
 echo ===================================================
 
-:: Fallback installers (only used if no portable folder is present and admin rights are available)
+:: Fallback installers (only used if no portable folder is present)
 set PYTHON_INSTALLER=python-manager-26.3.msix
 set GTK_INSTALLER=gtk3-runtime-3.24.31-2022-01-04-ts-win64.exe
 
@@ -46,8 +102,6 @@ if exist "!PORTABLE_PYTHON!" (
         ) else (
             echo [Error] Cannot find %PYTHON_INSTALLER% in the folder, and no
             echo PythonPortable folder was found next to this file either.
-            echo This computer may not have permission to install Python -
-            echo see PORTABLE_SETUP_GUIDE.md for a no-admin-required option.
             pause
             exit /b 1
         )
@@ -61,9 +115,7 @@ echo   Checking GTK3 Runtime...
 echo ===================================================
 
 if exist "!PORTABLE_GTK_BIN!" (
-    echo Found portable GTK3 runtime next to this file - adding it to PATH
-    echo for this session ^(no installation needed^). This also includes
-    echo the Visual C++ Runtime DLLs, so no admin rights are required.
+    echo Found portable GTK3 runtime next to this file - adding it to PATH.
     set "PATH=!PORTABLE_GTK_BIN!;!PATH!"
 ) else (
     if not exist "C:\Program Files\GTK3-Runtime Win64" (
@@ -75,8 +127,6 @@ if exist "!PORTABLE_GTK_BIN!" (
             ) else (
                 echo [Error] Cannot find %GTK_INSTALLER% in the folder, and no
                 echo GTK3-Runtime portable folder was found next to this file either.
-                echo This computer may not have permission to install GTK3 -
-                echo see PORTABLE_SETUP_GUIDE.md for a no-admin-required option.
                 pause
                 exit /b 1
             )
@@ -92,8 +142,6 @@ echo ===================================================
 echo   Checking required Python packages...
 echo ===================================================
 
-:: *** ใช้ runpy.run_path() เพื่อตั้ง __file__ ให้ถูกต้อง และให้ main.py
-::     รัน GTK3 preload setup ก่อน import weasyprint ***
 !PYTHON_CMD! -c "import runpy, sys; sys.argv=['main']; runpy.run_path('main.py', run_name='__not_main__')" >nul 2>weasyprint_check_error.log
 if !errorlevel! neq 0 (
     echo Some required Python packages are missing or failed to load. Installing
@@ -108,10 +156,7 @@ if !errorlevel! neq 0 (
     if !errorlevel! neq 0 (
         echo ===================================================
         echo [Error] The Python packages are installed, but one of
-        echo them failed to load ^(this is usually WeasyPrint not
-        echo finding the GTK3 runtime^). The exact error is below,
-        echo and was also saved to weasyprint_check_error.log in
-        echo this folder - please send that file for help:
+        echo them failed to load. The exact error is below:
         echo ---------------------------------------------------
         type weasyprint_check_error.log
         echo ---------------------------------------------------
@@ -154,7 +199,6 @@ echo ===================================================
 echo   Starting WIPOTEC PV Certificate System
 echo ===================================================
 
-:: Start FastAPI backend minimized, logging to pv_server.log
 start /min "WIPOTEC PV Server" cmd /k !PYTHON_CMD! main.py
 
 echo Waiting for the server to start...
@@ -179,23 +223,15 @@ for /L %%i in (1,1,60) do (
     )
 )
 
-:: Open the web page in the default browser
 start "" "http://127.0.0.1:8000/index.html"
 
 echo ===================================================
 if "!SERVER_READY!"=="1" (
     echo The system is ready. The server is running minimized
-    echo in the taskbar as "WIPOTEC PV Server" - you normally
-    echo don't need to open it. If the web page stops working,
-    echo open that window from the taskbar to see the error,
-    echo or close it and run this file again to restart.
+    echo in the taskbar as "WIPOTEC PV Server".
 ) else (
     echo [Warning] The server did not respond within the timeout.
-    echo Opening the page anyway, but it may show an error. Check
-    echo the "WIPOTEC PV Server" window in the taskbar for details,
-    echo and make sure to click "Allow access" if a Windows Firewall
-    echo popup is waiting there. If you see "Uvicorn running on..."
-    echo in that window, just refresh the web page - it is ready.
+    echo Check the "WIPOTEC PV Server" window for details.
 )
 echo ===================================================
 echo This window will close automatically in a few seconds.

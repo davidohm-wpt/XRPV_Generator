@@ -139,6 +139,33 @@
       border: 1px solid #ffe58f;
     }
 
+    #update-banner {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff8e1;
+      color: #8a6d00;
+      border: 1px solid #ffe58f;
+      line-height: 1.5;
+      position: relative;
+    }
+    #update-banner.visible { display: block; }
+    #update-banner button {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: #8a6d00;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 6px;
+      line-height: 1;
+    }
+    #update-banner button:hover { color: #5a4a00; }
+
     button.btn-submit { 
       background: #008080; 
       color: white; 
@@ -180,6 +207,13 @@
   <div class="form-header">
     <h2>X-Ray Performance Verification Form<span class="version-badge" id="version_badge">v...</span></h2>
     <img src="data:image/png;base64,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" alt="WIPOTEC">
+  </div>
+
+  <!-- Version update notification banner -->
+  <div id="update-banner">
+    <button onclick="dismissUpdateBanner()" title="Dismiss">&times;</button>
+    <strong>⚠️ มีเวอร์ชันใหม่:</strong>
+    <span id="update-banner-text"></span>
   </div>
   
   <!-- General Header Info -->
@@ -336,6 +370,12 @@
 <script>
   const API_BASE_URL = '';
 
+  // ============================================================
+  // GitHub version check configuration
+  // ============================================================
+  const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/davidohm-wpt/XRPV_Generator/main/VERSION.txt';
+  const REMEMBER_DISMISS = true;
+
   const visualItems = [
     "Documentation Present", "Cabinet Condition", "Gaskets and Seals", 
     "Screws and Fittings", "Door Seal", "Cable Glands", 
@@ -365,6 +405,45 @@
   }).catch(() => {
     document.getElementById('version_badge').textContent = 'v?';
     document.getElementById('footer_version').textContent = 'v?';
+  });
+
+  // ============================================================
+  // Check for new version from GitHub
+  // ============================================================
+  async function checkForNewVersion() {
+    try {
+      const response = await fetch(`${GITHUB_VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) return;
+      const latestVersion = (await response.text()).trim();
+      if (!latestVersion) return;
+
+      const currentVersion = document.getElementById('version_badge')
+        .textContent.replace('v', '').trim();
+      if (latestVersion === currentVersion) return;
+
+      const dismissKey = 'pv_dismissed_version_' + latestVersion;
+      if (REMEMBER_DISMISS && localStorage.getItem(dismissKey) === 'true') return;
+
+      const banner = document.getElementById('update-banner');
+      const text = document.getElementById('update-banner-text');
+      text.innerHTML = `มีเวอร์ชัน <strong>v${latestVersion}</strong> ให้อัปเดต (คุณใช้ v${currentVersion}) — กรุณาปิดโปรแกรมและเปิดใหม่เพื่อรับเวอร์ชันล่าสุด`;
+      banner.classList.add('visible');
+      banner.dataset.dismissKey = dismissKey;
+    } catch (err) {
+      console.log('Version check skipped:', err.message);
+    }
+  }
+
+  function dismissUpdateBanner() {
+    const banner = document.getElementById('update-banner');
+    banner.classList.remove('visible');
+    if (REMEMBER_DISMISS && banner.dataset.dismissKey) {
+      localStorage.setItem(banner.dataset.dismissKey, 'true');
+    }
+  }
+
+  window.addEventListener('load', () => {
+    setTimeout(checkForNewVersion, 1500);
   });
 
   function renderList(items, containerId, defaultVal = "-") {
@@ -604,7 +683,7 @@
       const pos = getCanvasPos(evt);
       ctx.lineTo(pos.x, pos.y);
       ctx.strokeStyle = '#1a1a1a';
-      ctx.lineWidth = 4;  // thicker line because canvas is 2x
+      ctx.lineWidth = 4;
       ctx.lineCap = 'round';
       ctx.stroke();
       hasSignature = true;
@@ -774,7 +853,6 @@
       return;
     }
 
-    // Soft warnings (won't block submission)
     const warnings = [];
     if (!engineerSigPad.hasSignature()) warnings.push('Service Engineer signature is empty.');
     if (!customerSigPad.hasSignature()) warnings.push('Customer signature is empty.');
@@ -857,7 +935,6 @@
 
     if (warnings.length > 0) {
       showMessage('Warning: ' + warnings.join(' ') + ' Generating PDF anyway...', 'warning');
-      // Give user a moment to see warning, but continue
     }
 
     const submitBtn = document.getElementById('submit_btn');
