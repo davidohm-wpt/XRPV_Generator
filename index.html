@@ -212,7 +212,7 @@
   <!-- Version update notification banner -->
   <div id="update-banner">
     <button onclick="dismissUpdateBanner()" title="Dismiss">&times;</button>
-    <strong>⚠️ มีเวอร์ชันใหม่:</strong>
+    <strong>⚠️ Update Available:</strong>
     <span id="update-banner-text"></span>
   </div>
   
@@ -426,7 +426,7 @@
 
       const banner = document.getElementById('update-banner');
       const text = document.getElementById('update-banner-text');
-      text.innerHTML = `มีเวอร์ชัน <strong>v${latestVersion}</strong> ให้อัปเดต (คุณใช้ v${currentVersion}) — กรุณาปิดโปรแกรมและเปิดใหม่เพื่อรับเวอร์ชันล่าสุด`;
+      text.innerHTML = `A new version <strong>v${latestVersion}</strong> is available (you are using v${currentVersion}). Please close the program and open it again to get the latest version.`;
       banner.classList.add('visible');
       banner.dataset.dismissKey = dismissKey;
     } catch (err) {
