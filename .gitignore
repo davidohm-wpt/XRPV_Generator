@@ -1,21 +1,99 @@
+# ============================================================
 # Python
+# ============================================================
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
+# Unit test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+.nox/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# ============================================================
 # Logs
+# ============================================================
 pv_server.log
 weasyprint_check_error.log
+*.log
 
-# Portable folders (stored in OneDrive)
+# ============================================================
+# Portable folders (stored in OneDrive, not in Git)
+# ============================================================
 PythonPortable/
 GTK3-Runtime/
 PortableGit/
 
-# OS
-Thumbs.db
-.DS_Store
+# ============================================================
+# Environment / Secrets
+# ============================================================
+.env
+.env.local
+.env.*.local
+venv/
+env/
+ENV/
 
-# IDE
+# ============================================================
+# OS
+# ============================================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ============================================================
+# IDE / Editor
+# ============================================================
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================
+# Generated output
+# ============================================================
+*.pdf
+PV_Certificate_*.pdf
+
+# ============================================================
+# Temporary files
+# ============================================================
+*.tmp
+*.bak
+*.orig
+*.rej
