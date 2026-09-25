@@ -7,7 +7,7 @@ __pycache__/
 pv_server.log
 weasyprint_check_error.log
 
-# Portable folders (เก็บใน OneDrive แทน)
+# Portable folders (stored in OneDrive)
 PythonPortable/
 GTK3-Runtime/
 PortableGit/
