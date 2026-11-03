@@ -97,3 +97,7 @@ PV_Certificate_*.pdf
 *.bak
 *.orig
 *.rej
+
+# Large release archives and temporary backups must never be pushed to GitHub
+*.zip
+_backup_v1.4.1/

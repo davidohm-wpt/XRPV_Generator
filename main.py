@@ -90,6 +90,7 @@ from typing import List, Dict
 import logging
 import traceback
 from jinja2 import Template
+from radiation_safety import router as rs_router  # X-Ray Radiation Safety (XRSC) form + PDF
 
 # --- Logging setup ---
 LOG_PATH = BASE_DIR / "pv_server.log"
@@ -103,6 +104,7 @@ logging.basicConfig(
 logger = logging.getLogger("pv_server")
 
 app = FastAPI()
+app.include_router(rs_router)
 
 app.add_middleware(
     CORSMiddleware,
