@@ -12,6 +12,11 @@ from pathlib import Path
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
+# Portable (embeddable) Python ignores the script folder on sys.path, so add it explicitly
+# - otherwise sibling modules such as radiation_safety.py cannot be imported.
+import sys
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 GTK_BIN = BASE_DIR / "GTK3-Runtime" / "bin"
 
 if GTK_BIN.exists():
