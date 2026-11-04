@@ -119,6 +119,7 @@ app.add_middleware(
 )
 
 INDEX_HTML_PATH = BASE_DIR / "index.html"
+HOME_HTML_PATH = BASE_DIR / "home.html"
 VERSION_FILE_PATH = BASE_DIR / "VERSION.txt"
 
 
@@ -133,7 +134,12 @@ def read_version() -> str:
 
 @app.get("/")
 def serve_root():
-    return FileResponse(INDEX_HTML_PATH)
+    return FileResponse(HOME_HTML_PATH)
+
+
+@app.get("/home.html")
+def serve_home_html():
+    return FileResponse(HOME_HTML_PATH)
 
 
 @app.get("/index.html")
