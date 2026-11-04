@@ -182,10 +182,10 @@
 
   <!-- General -->
   <div class="grid-4">
-    <div class="form-group"><label for="cert_no">Certificate No.<span class="required-mark">*</span></label><input type="text" id="cert_no" placeholder="e.g. TH3069-010-060524-XRSC"></div>
+    <div class="form-group"><label for="cert_no">Certificate No.<span class="required-mark">*</span></label><input type="text" id="cert_no"></div>
     <div class="form-group"><label for="check_date">Safety Check Date<span class="required-mark">*</span></label><input type="date" id="check_date"></div>
     <div class="form-group"><label for="service_engineer">Service Engineer<span class="required-mark">*</span></label><input type="text" id="service_engineer" placeholder="Name"></div>
-    <div class="form-group"><label for="local_regulation">Local Regulation</label><input type="text" id="local_regulation" placeholder="e.g. Thailand Institute of Nuclear Technology"></div>
+    <div class="form-group"><label for="local_regulation">Local Regulation</label><input type="text" id="local_regulation"></div>
   </div>
 
   <h3>Customer Information</h3>
@@ -247,14 +247,14 @@
   <h3>Radiation Survey</h3>
   <div class="card-box">
     <div class="grid-4">
-      <div class="form-group"><label for="instrument_manufacturer">Survey Instrument Manufacturer</label><input type="text" id="instrument_manufacturer" placeholder="e.g. IMI"></div>
-      <div class="form-group"><label for="instrument_model">Model</label><input type="text" id="instrument_model" placeholder="e.g. R100X"></div>
+      <div class="form-group"><label for="instrument_manufacturer">Survey Instrument Manufacturer</label><input type="text" id="instrument_manufacturer"></div>
+      <div class="form-group"><label for="instrument_model">Model</label><input type="text" id="instrument_model"></div>
       <div class="form-group"><label for="instrument_serial">Serial Number</label><input type="text" id="instrument_serial"></div>
       <div class="form-group"><label for="calibration_due">Calibration Due Date</label><input type="date" id="calibration_due"></div>
     </div>
     <div class="grid-3">
-      <div class="form-group"><label for="kv_percent">X-Ray Machine Setting (kV)</label><div class="input-unit-group"><input type="number" id="kv_percent" value="100"><span class="unit-suffix">% kV</span></div></div>
-      <div class="form-group"><label for="ma_percent">X-Ray Machine Setting (mA)</label><div class="input-unit-group"><input type="number" id="ma_percent" value="100"><span class="unit-suffix">% mA</span></div></div>
+      <div class="form-group"><label for="kv_percent">X-Ray Machine Setting (kV)</label><div class="input-unit-group"><input type="number" id="kv_percent"><span class="unit-suffix">% kV</span></div></div>
+      <div class="form-group"><label for="ma_percent">X-Ray Machine Setting (mA)</label><div class="input-unit-group"><input type="number" id="ma_percent"><span class="unit-suffix">% mA</span></div></div>
       <div class="form-group"><label for="max_limit">Highest Allowable Exposure Rate (Local Regulation)</label><div class="input-unit-group"><input type="number" step="any" id="max_limit" value="1" oninput="colorReadings()"><span class="unit-suffix">&micro;Sv/hr</span></div></div>
     </div>
     <div style="font-size:11px; color:#666; margin-bottom:8px;"><strong>Note:</strong> All external surface exposure rate readings must be less than the maximum stated in the applicable local regulations. Readings at or above the limit turn red.</div>
