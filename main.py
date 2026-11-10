@@ -115,6 +115,16 @@ app.include_router(rs_router)
 app.include_router(pm_router)
 app.include_router(cwcr_router)
 
+
+@app.middleware("http")
+async def no_cache_for_pages(request, call_next):
+    """Always serve the HTML pages fresh, so a new version shows up without a manual hard refresh."""
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith(".html"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
