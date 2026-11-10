@@ -161,7 +161,7 @@ def serve_index_html():
     return FileResponse(INDEX_HTML_PATH)
 
 
-FAVICON_PATH = BASE_DIR / "wipotec.ico"
+FAVICON_PATH = BASE_DIR / "wipotec2.ico"
 
 
 @app.get("/favicon.ico")
