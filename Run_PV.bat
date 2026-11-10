@@ -227,7 +227,8 @@ for /L %%i in (1,1,60) do (
     )
 )
 
-start "" "http://127.0.0.1:8000/"
+REM The ?v= part makes the browser treat this as a new address, so it never shows a cached old home page
+start "" "http://127.0.0.1:8000/?v=!APP_VERSION!"
 
 echo ===================================================
 if "!SERVER_READY!"=="1" (
