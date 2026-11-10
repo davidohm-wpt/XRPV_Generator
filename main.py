@@ -161,6 +161,17 @@ def serve_index_html():
     return FileResponse(INDEX_HTML_PATH)
 
 
+FAVICON_PATH = BASE_DIR / "wipotec.ico"
+
+
+@app.get("/favicon.ico")
+def serve_favicon():
+    from fastapi.responses import Response
+    if FAVICON_PATH.exists():
+        return FileResponse(FAVICON_PATH, media_type="image/x-icon")
+    return Response(status_code=204)
+
+
 @app.get("/version")
 def get_version():
     return {"version": read_version()}

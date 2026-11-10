@@ -195,6 +195,11 @@ if exist "%~dp0Sarabun-Bold.ttf" (
     )
 )
 
+REM Create/refresh a Desktop shortcut with the WIPOTEC icon (no admin needed; safe to fail)
+if exist "%~dp0wipotec.ico" (
+    powershell -NoProfile -Command "try { $p = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WIPOTEC Certificates.lnk'; $s = (New-Object -ComObject WScript.Shell).CreateShortcut($p); $s.TargetPath = '%~dp0Run_PV.bat'; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%~dp0wipotec.ico'; $s.WindowStyle = 7; $s.Description = 'WIPOTEC Service Certificates'; $s.Save() } catch { }" >nul 2>&1
+)
+
 echo ===================================================
 echo   Starting WIPOTEC PV Certificate System
 echo ===================================================
