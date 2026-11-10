@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CWCR — WIPOTEC</title>
+<style>
+  :root{
+    --teal:#009999; --teal-dark:#00726f; --teal-tint:#e6f7f7;
+    --ink:#1b2b2b; --paper:#ffffff; --line:#d7e4e3;
+    --amber:#b3790a; --amber-tint:#fff6e5;
+    --red:#c0392b; --red-tint:#fdecea;
+    --green:#1e7a4c; --green-tint:#eaf7f0;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0f1717; --ink:#e8f0ef; --line:#1f3231; --teal-tint:#0d2626;
+      --amber-tint:#2a2110; --red-tint:#2a1513; --green-tint:#0f271b;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0f1717; --ink:#e8f0ef; --line:#1f3231; --teal-tint:#0d2626;
+    --amber-tint:#2a2110; --red-tint:#2a1513; --green-tint:#0f271b;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:var(--sans); background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased;}
+  .shell{max-width:1080px; margin:0 auto; padding:28px 20px 120px;}
+
+  .app-header{display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:20px; border-bottom:2px solid var(--teal);}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-mark{width:38px; height:38px; border-radius:8px; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex:none;}
+  .brand-text h1{margin:0; font-size:17px; font-weight:700; letter-spacing:-.01em;}
+  .brand-text p{margin:2px 0 0; font-size:12.5px; color:var(--teal-dark); opacity:.85;}
+  .doc-no{font-family:var(--mono); font-size:12px; color:var(--ink); opacity:.6; text-align:right;}
+
+  .stepper-wrap{margin:26px 0 30px; overflow-x:auto;}
+  .stepper{display:flex; align-items:flex-start; gap:0; min-width:max-content;}
+  .step-node{display:flex; flex-direction:column; align-items:center; gap:6px; min-width:96px; cursor:pointer;}
+  .step-dot{width:30px; height:30px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; color:var(--ink); opacity:.55; background:var(--paper); transition:all .18s ease;}
+  .step-node.active .step-dot{border-color:var(--teal); background:var(--teal); color:#fff; opacity:1;}
+  .step-node.done .step-dot{border-color:var(--teal); background:var(--teal-tint); color:var(--teal-dark); opacity:1;}
+  .step-node.done .step-dot::after{content:"✓"; font-size:13px;}
+  .step-node.done .step-dot span{display:none;}
+  .step-label{font-size:11.5px; text-align:center; line-height:1.25; max-width:104px; color:var(--ink); opacity:.7;}
+  .step-node.active .step-label{opacity:1; font-weight:600; color:var(--teal-dark);}
+  .step-connector{flex:1; height:2px; background:var(--line); min-width:22px; margin-top:15px;}
+  .step-connector.done{background:var(--teal);}
+
+  .card{background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:22px 24px; margin-bottom:18px;}
+  .card h2{margin:0 0 4px; font-size:15px; font-weight:700; color:var(--teal-dark); display:flex; align-items:center; gap:8px;}
+  .card h3.subhead{font-size:13px; margin:20px 0 10px; font-weight:700; padding-top:16px; border-top:1px dashed var(--line);}
+  .card h3.subhead.first{margin-top:14px; padding-top:0; border-top:none;}
+  .card h4.minihead{font-size:11.5px; margin:0 0 8px; font-weight:700; opacity:.7; text-transform:uppercase; letter-spacing:.02em;}
+  .card .sub{margin:0 0 18px; font-size:12.5px; opacity:.65;}
+  .section-tag{display:inline-block; font-size:10.5px; font-weight:700; color:var(--teal-dark); background:var(--teal-tint); border-radius:5px; padding:2px 7px;}
+
+  .config-row{display:flex; gap:24px; flex-wrap:wrap;}
+  .config-block{flex:1; min-width:260px;}
+  .config-block h3{font-size:13px; margin:0 0 10px; font-weight:700;}
+  .lane-stepper{display:flex; align-items:center; gap:14px;}
+  .lane-stepper button{width:38px; height:38px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); font-size:18px; cursor:pointer; color:var(--teal-dark); font-weight:700;}
+  .lane-stepper button:hover{border-color:var(--teal);}
+  .lane-stepper .lane-count{font-size:22px; font-weight:700; min-width:36px; text-align:center;}
+  .toggle-row{display:flex; gap:10px;}
+  .toggle-btn{flex:1; border:1.5px solid var(--line); border-radius:8px; padding:12px; text-align:center; cursor:pointer; font-size:13px; font-weight:600;}
+  .toggle-btn.selected{border-color:var(--teal); background:var(--teal-tint); color:var(--teal-dark);}
+  .config-summary{margin-top:18px; padding-top:16px; border-top:1px dashed var(--line); font-size:12.5px; opacity:.75;}
+
+  .field-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px 16px;}
+  .field-grid.cols-2{grid-template-columns:repeat(2,1fr);}
+  .field-grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .field-grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  @media (max-width:760px){.field-grid, .field-grid.cols-2, .field-grid.cols-3, .field-grid.cols-4{grid-template-columns:1fr 1fr;}}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field.span-2{grid-column:span 2;}
+  .field.span-3{grid-column:span 3;}
+  .field label{font-size:11.5px; font-weight:600; opacity:.75;}
+  .field input, .field select, .field textarea{border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-size:13px; font-family:var(--sans); background:var(--paper); color:var(--ink);}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal);}
+  .field.required label::after{content:" *"; color:var(--red);}
+  .field-with-suffix{display:flex; align-items:center; gap:6px;}
+  .field-with-suffix input{flex:1;}
+  .unit-label{font-size:11.5px; opacity:.6; white-space:nowrap;}
+  .cell-with-suffix{display:flex; align-items:center; gap:5px;}
+  .cell-with-suffix input{flex:1; min-width:0;}
+
+  table.tbl{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.tbl th{text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.03em; opacity:.55; padding:7px 8px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  table.tbl td{padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  table.tbl tr:last-child td{border-bottom:none;}
+  table.tbl input, table.tbl select{width:100%; border:1px solid var(--line); border-radius:6px; padding:5px 7px; font-size:12.5px; font-family:var(--sans); background:var(--paper); color:var(--ink);}
+  table.tbl input[type=number]{font-family:var(--mono);}
+
+  .note-col{opacity:.55; font-size:11.5px; max-width:220px;}
+  .badge{display:inline-block; min-width:52px; padding:4px 8px; border-radius:5px; font-size:11.5px; font-weight:700; text-align:center;}
+  .badge.pass{background:var(--green-tint); color:var(--green);}
+  .badge.fail{background:var(--red-tint); color:var(--red);}
+  .badge.wait{background:var(--line); color:var(--ink); opacity:.55;}
+  .due-flag{color:var(--red); font-weight:700;}
+  @media print{ .due-flag{color:inherit; font-weight:inherit;} }
+
+  .callout{display:flex; gap:10px; align-items:flex-start; background:var(--teal-tint); border:1px solid var(--teal); border-radius:8px; padding:12px 14px; font-size:12.5px; color:var(--teal-dark); margin-bottom:18px;}
+  .callout b{display:block; margin-bottom:2px;}
+  .guide-note{font-size:11.5px; opacity:.6; margin:4px 0 14px;}
+
+  .add-row-bar{display:flex; align-items:center; gap:10px; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line); flex-wrap:wrap;}
+  .add-row-bar input[type=number]{width:70px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; text-align:center;}
+  .btn-sm{border:1px solid var(--line); background:var(--paper); border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; font-weight:600; color:var(--teal-dark);}
+  .btn-sm:hover{border-color:var(--teal);}
+  .btn-sm:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-sm.danger{color:var(--red);}
+  .cap-note{font-size:11px; opacity:.5;}
+
+  .diagram-wrap{display:flex; justify-content:center; margin-bottom:18px;}
+
+  .sig-box{border:1.5px dashed var(--line); border-radius:10px; padding:16px; text-align:center;}
+  .sig-preview{max-width:260px; max-height:110px; margin:0 auto 10px; display:block; border-bottom:1px solid var(--line); padding-bottom:8px;}
+
+  .footer-nav{position:sticky; bottom:0; display:flex; justify-content:space-between; align-items:center; background:var(--paper); border-top:1px solid var(--line); padding:14px 4px; margin-top:8px;}
+  .btn{border:none; border-radius:7px; padding:10px 20px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:var(--sans);}
+  .btn-primary{background:var(--teal); color:#fff;}
+  .btn-primary:hover{background:var(--teal-dark);}
+  .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--teal); color:var(--teal-dark);}
+  .btn-print{background:var(--ink); color:var(--paper);}
+
+  @media print{
+    body{background:#fff;}
+    .stepper-wrap, .footer-nav, .callout, .no-print{display:none !important;}
+    .card{border:none; box-shadow:none; padding:0; margin-bottom:22px; page-break-inside:avoid;}
+    .shell{max-width:100%; padding:0;}
+    @page{size:A4; margin:14mm 12mm;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="app-header">
+    <div class="brand">
+      <div class="brand-mark">WT</div>
+      <div class="brand-text">
+        <h1>CWCR</h1>
+        <p>WIPOTEC Checkweigher &amp; Metal Detector Commissioning</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <a href="/" style="font-size:12px; font-weight:700; color:var(--teal-dark); text-decoration:none;">&larr; Home</a>
+      <span id="versionBadge" style="font-size:11px; font-weight:700; color:var(--teal-dark); background:var(--teal-tint); border-radius:5px; padding:3px 9px;">v1.0.6.2</span>
+      <div class="doc-no">Document No.<br><span id="docNoDisplay">—</span></div>
+    </div>
+  </div>
+
+  <div class="stepper-wrap"><div class="stepper" id="stepper"></div></div>
+  <div id="stepBody"></div>
+
+  <div class="footer-nav no-print">
+    <button class="btn btn-ghost" id="btnBack">← Back</button>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-print" id="btnPrint">🖨 Preview</button>
+      <button class="btn btn-primary" id="btnNext">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CWCR — WIPOTEC Checkweigher Calibration Report
+   Version: see VERSION.txt (served live via GET /version)
+   This is the CWCR-packaged edition of the Calibration Report
+   Generator: the same wizard as the standalone artifact, now
+   served by a small local FastAPI + WeasyPrint backend (main.py,
+   same directory) instead of relying only on the browser's print
+   dialog. "Preview" still uses window.print(); "Generate" (last
+   step) now POSTs the full `state` object as JSON to /generate-pdf
+   and downloads the real PDF the server renders and returns,
+   named documentNo_machineSerial_companyName.pdf.
+   This file intentionally does not read from or depend on
+   anything in the separate XRPV Generator project it's packaged
+   alongside — it is a standalone frontend for its own backend.
+
+   ARCHITECTURE (read this before changing anything)
+   ---------------------------------------------------------------
+   1. `state` (below) is the single source of truth. Every screen
+      renders FROM state and writes back INTO state — there is no
+      other data store except the small `localStorage` cache used
+      only to remember Test Kit values between visits.
+   2. The wizard has 5 kinds of steps, generated dynamically by
+      computeSteps() from state.config (lane count + MDi Yes/No):
+      Machine Config → Main Page → CW Test (×N lanes) →
+      MD Test (×N lanes, only if MDi = Yes) → Final Summary.
+   3. renderStepBody() clears #stepBody and calls the matching
+      renderXxxPage() function. Each of those returns a DOM node
+      built from template strings + fieldHTML()/renderChecklistTable()
+      /buildLoadTable() helpers, then wires up event listeners.
+   4. IMPORTANT — focus-preserving inputs: plain fields are bound
+      with bindFields(), which ONLY writes to state (no re-render).
+      Anything that needs a live recalculation (test-kit due-date
+      colour, Linearity/Eccentricity/Repeatability Error & Result)
+      uses buildLoadTable()'s updateRow()/updateAll(), which patch
+      just the affected table cells directly. NEVER call
+      renderStepBody() from a plain text/number input's own
+      "input" listener — that was the v1.0 focus-loss bug; only
+      call it from button clicks (Add/Remove row, Next/Back, etc.)
+      where losing focus doesn't matter.
+   5. Tolerance/Pass-Fail logic lives in classify(), eMultiplier()
+      and evalLoadTest() — this is the one place to touch if the
+      weighing-class bands or e-multiplier rules ever change.
+   6. Two output paths: "Preview" uses the browser's native print
+      dialog (@media print CSS + window.print(), no server round
+      trip). "Generate" (last step) POSTs `state` as JSON to the
+      backend's /generate-pdf, which renders its own Jinja2 HTML
+      template with WeasyPrint and returns a PDF — that template
+      (in main.py) must be updated in step with any change to the
+      state shape here, or the two outputs will drift apart. Any
+      on-screen element that should never appear on the printed
+      report gets class="no-print".
+
+   HOW TO EXTEND (common future changes)
+   ---------------------------------------------------------------
+   - Add a field to an existing card: add a line to the relevant
+     makeXxx()/mainInfo default object AND a fieldHTML(...) call
+     in the matching renderXxxPage() template — nothing else to
+     touch, bindFields() picks it up automatically via data-path.
+   - Add a whole new checklist section: reuse renderChecklistTable()
+     or renderAddCountSection() — don't build a new table type.
+   - Add a new step to the wizard: add an entry in computeSteps()
+     and a branch in renderStepBody()'s if/else chain.
+   - Change a tolerance rule: edit eMultiplier()/classify() only.
+
+   CHANGELOG
+   ---------------------------------------------------------------
+   v1.0.0 — First packaged release. Lane-count + MDi configuration
+     wizard; Main Page (Customer/POC, Machine Info, Weight Info,
+     Test Kit with localStorage memory + 30-day due-date flag,
+     System/Additional/Optional checklists); per-lane CW Test
+     (Weigh Cell Info, checklist, Linearity/Eccentricity/
+     Repeatability with free Test Load entry and live Pass/Fail,
+     Product Dynamic Test, per-lane Operate in Good Condition);
+     per-lane MD Test (physical checklist, Detection Verification
+     with Ferrous/Non-Ferrous/Stainless + free "extra type" rows);
+     Final Summary (global Operate in Good Condition + See in
+     Comments, Service Technician signature); print/PDF via
+     browser print with no-print rules for editor-only controls.
+   v1.0.2 — Confirmed working. Test Kit Information rows are now free-text Equipment
+     names (not fixed labels) with Add/Remove, max 10, still
+     remembered via localStorage as a list; Repeatability Test is
+     now managed in sets (1 set = one 0 g reading + one Test Load
+     reading), default 5 sets, Add/Remove Set capped at 10 sets
+     (20 individual readings); Final Summary now also shows
+     Company Name; Document No. moved from Main Page to the
+     Machine Configuration step; "Preview / Print" button
+     relabeled "Preview"; terminal "Done" button relabeled
+     "Generate" (label only for now — see chat for the proposed
+     document-no_serial_company auto-filename behaviour, held back
+     pending confirmation before wiring it up); Final Summary:
+     both Service Technician Signature and a new Customer
+     Signature block let the person choose "Sign (Touch Screen)"
+     (a canvas drawing pad using Pointer Events) or "Import Image"
+     (file-upload), each captured to state as a PNG data URL;
+     Machine Configuration step no longer shows the Preview button
+     (nothing to preview/print yet at that point in the wizard).
+   v1.0.3 — WIPOTEC Test Kit Information moved from Main Page to
+     Final Summary, now ordered Final Summary → Test Kit → Customer
+     Signature → Service Technician Signature; step names renamed:
+     "Machine Config" → "Document Setup", "Main Page — Info &
+     Checklist" → "Customer Info, Machine Info & System Check
+     List", "CW Test" → "Transportation Check List & Weight
+     Testing", "MD Test" → "Metal Detector Check List & Testing".
+   v1.0.4 — "Machine Model / Type" renamed "Model", "Machine Serial
+     Number" renamed "Serial No."; every checklist table (System,
+     Additional/Optional, CW, MD physical) now has "Check - all"
+     and "Check good all" bulk buttons for Adjustment/Result;
+     Product Dynamic Test / Spot Check gained an Article Number
+     free-text field next to Article Name; Result options changed
+     to Good/Bad/Failed/N-A; Detection Verification Front/Middle/
+     Back results changed from PASS/FAILED/N-A to ✓/✗/N-A.
+   v1.0.5 — "Model Number" renamed "Model No."; "MD Type" renamed
+     "Model Type"; checklist bulk button "Check - all" renamed
+     "Check no adjusted all", plus a new "Clear all" button that
+     resets both Adjustment and Result to their defaults; "Final
+     Summary" step renamed "Summary" throughout; the "See in
+     Comments" checkbox removed from the Summary page.
+   v1.0.5.1 — Weighing Specification (on each CW page) gained its
+     own "Clear all" button; Repeatability Test No. now numbers in
+     pairs by set (rows 1&2 show "1", rows 3&4 show "2", etc.)
+     instead of a flat sequential count; Product Dynamic Test /
+     Spot Check: Speed Value now comes before Speed Type, and
+     Speed Type is a 3-option dropdown (Pcs/min, m/sec, m/min)
+     instead of the old 2-option Throughput/Conveyor labels.
+   v1.0.5.2 — Changing Unit in a CW page's Weighing Specification
+     now live-refreshes that page, so the unit shown next to Test
+     Load/Reading/Error (Linearity/Eccentricity/Repeatability) and
+     Product Weight/Mean Value/Standard Deviation (Product Dynamic
+     Test) updates immediately instead of only on next navigation.
+   v1.0.6 — Adjustment column removed entirely from every checklist
+     table (and its "Check no adjusted all" button); checklist
+     "Clear all" now only resets Result; Weighing Specification's
+     "Clear all" button removed; Repeatability Test No. only shows
+     a number on the 0 g row of each pair, the Test Load row is
+     left blank; Product Dynamic Test / Spot Check reordered to
+     Article Name/Number (equal width) → Product Dimension →
+     Filter Frequency/Speed Value/Speed Type/Quantity Test (Speed
+     Value and Speed Type shown at half width, centered) → Product
+     Weight/Mean Value/Standard Deviation.
+   v1.0.6.1 — Machine Info reordered to Serial No./Model/Software
+     Version then Model No./Manufacturing Year/Customer Asset No.
+     (renamed from Location); Product Dynamic Test's Filter
+     Frequency/Speed Value/Speed Type/Quantity Test row split into
+     two symmetric 2-column rows; Metal Detector Info reordered
+     into Model Type/Serial Number then Tunnel Height/Width;
+     Physical Check List gained an "Additional Physical Check
+     List" add-up-to-5 section (renderAddCountSection now supports
+     an optional max-items cap); Detection Verification gained an
+     Article No. field, and Article Name/No. are now read-only,
+     synced from the matching Product Dynamic Test / Spot Check
+     entry on the CW page (matched by position) instead of being
+     entered separately.
+   v1.0.6.2 — Document & Customer Info made symmetric: Company
+     Name and Address are each full-width, Country/ZIP Code sit in
+     their own even 2-column row (no more empty grid gaps); Product
+     Dynamic Test's Filter Frequency/Speed Value/Speed Type/
+     Quantity Test are back on one row, now as four equal-width
+     columns instead of the earlier two-row split or the shrink-
+     and-center hack.
+   CWCR packaging — Project renamed "Calibration Report Generator"
+     to CWCR. Frontend logic/data model unchanged from v1.0.6.2;
+     this edition adds a real backend (main.py, FastAPI + WeasyPrint)
+     alongside it, so "Generate" now produces an actual PDF file
+     instead of being a label-only placeholder. Version number is
+     now read live from the backend's VERSION.txt via GET /version.
+   ============================================================ */
+
+/* ============================================================
+   DATA MODEL
+   ============================================================ */
+const RESULT_OPTIONS = ["Good","Bad","Failed","N/A"];
+const PFN_OPTIONS = ["✓","✗","N/A"];
+const MAX_REPEAT_SETS = 10;
+const MAX_PRODUCTS = 10;
+const MAX_ARTICLES = 10;
+const MAX_EXTRA_TYPES = 10;
+const MAX_TESTKIT = 10;
+
+function newChecklistRow(description, note, editableDesc){
+  return { description, note: note||"", editableDesc: !!editableDesc, result:"N/A", remark:"" };
+}
+function newExtraType(){ return { type:"", id:"", size:"", front:"N/A", middle:"N/A", back:"N/A" }; }
+function makeTestKitRow(equipment){ return { equipment: equipment||"", serial:"", cert:"", calDate:"", dueDate:"" }; }
+
+const state = {
+  config: { laneCount: 1, hasMDi: null },
+  mainInfo: {
+    documentNo:"", companyName:"", address:"", country:"", zipCode:"",
+    pocName:"", pocPhone:"", pocEmail:"",
+    modelNumber:"", machineModelType:"", location:"", machineSerial:"", softwareVersion:"", manufacturingYear:"",
+    measuringRange:1500, displayValue:0.1, decimal:1, unit:"g",
+    eValue:0.2, deadLoad:4000,
+    testKitRows: [
+      makeTestKitRow("Weight kit 200mg–500g"),
+      makeTestKitRow("Weight kit 1kg"),
+      makeTestKitRow("Weight kit 2kg"),
+      makeTestKitRow("Tachometer"),
+      makeTestKitRow("Multimeter")
+    ],
+    systemChecklist: [
+      newChecklistRow("Machine Structure","Still good condition, no damaged spot e.g. Frame, cabinet, Foot screw."),
+      newChecklistRow("Power Switch Condition","Still good condition, no damaged spot"),
+      newChecklistRow("AC Power Test","Still in range tolerance +/- 5% of name plate"),
+      newChecklistRow("DC Power Supply Test","Still in range tolerance +/- 5% of name plate"),
+      newChecklistRow("HMI Condition","Look clean, Burn-in?"),
+      newChecklistRow("Touch Screen Condition","Still touchable, correct touch point"),
+      newChecklistRow("Emergency Stop Button","Operates correctly per configuration"),
+      newChecklistRow("Sorting Lamp","Operates correctly per configuration"),
+      newChecklistRow("Sorting Buzzer / Alarm","Operates correctly per configuration"),
+      newChecklistRow("Cover Guard","Still good condition, no damaged spot")
+    ],
+    additionalSystemChecklist: [],
+    optionalChecklist: []
+  },
+  lanes: [],
+  finalReview: {
+    machineGoodCondition:null, additionalComments:"",
+    technician:{ name:"", date:"", signatureDataUrl:null, signatureMode:"draw" },
+    customer:{ name:"", date:"", signatureDataUrl:null, signatureMode:"draw" }
+  }
+};
+
+function makeLoadRow(testLoad){ return { testLoad: testLoad, reading:null }; }
+
+function makeCW(){
+  return {
+    wcType:"", serialNumber:"", operateGoodCondition:null,
+    checklist:[
+      newChecklistRow("Photo Eye / Edge Length Sensor","Edge length mean metal integrated"),
+      newChecklistRow("Conveyor / Transportation Device Condition","e.g. Conveyor belt, Star Wheel for IS model"),
+      newChecklistRow("Sorting Function / Device Condition","e.g. Pusher, Flap drop conveyor, Reject relay"),
+      newChecklistRow("Sorting Bin / Device Condition","e.g. Body damaged, Lock broken"),
+      newChecklistRow("Consecutive Reject Verification","Can complete pusher cycle with no jam"),
+      newChecklistRow("Reject Position Verification","Product falls correctly to sorting bin")
+    ],
+    additionalChecklist: [],
+    linearity: { rows:[ makeLoadRow(0), makeLoadRow(75), makeLoadRow(225), makeLoadRow(750) ] },
+    eccentricity: { testLoad:500, rows:[ {pos:"A",reading:null},{pos:"B",reading:null},{pos:"C",reading:null},{pos:"D",reading:null},{pos:"E",reading:null} ] },
+    repeatability: { testLoad:500, sets:5, rows: Array.from({length:10},()=>({reading:null})) },
+    dynamicTests: [ makeDynamicTest() ]
+  };
+}
+function makeDynamicTest(){
+  return { articleName:"", articleNumber:"", length:"", width:"", height:"", filterFrequency:"", speedValue:"", speedType:"Pcs/min", qtyTest:"", productWeight:"", meanValue:"", stdDeviation:"" };
+}
+function makeArticle(){
+  return {
+    name:"", detectionLevel:"", phaseAngle:"", stretching:"",
+    ferrous:{id:"",size:"",front:"N/A",middle:"N/A",back:"N/A"},
+    nonFerrous:{id:"",size:"",front:"N/A",middle:"N/A",back:"N/A"},
+    stainless:{id:"",size:"",front:"N/A",middle:"N/A",back:"N/A"},
+    extraTypes: [ newExtraType(), newExtraType() ]
+  };
+}
+function makeMD(){
+  return {
+    mdType:"", serialNumber:"", tunnelHeight:"", tunnelWidth:"",
+    checklist:[
+      newChecklistRow("Physical Condition","Good, not cracked"),
+      newChecklistRow("Tunnel Condition","Good, no damage"),
+      newChecklistRow("Metal Detector Cable Condition",""),
+      newChecklistRow("Metal Detector Cable Glands Condition","")
+    ],
+    articles: [ makeArticle() ],
+    additionalPhysicalChecklist: []
+  };
+}
+
+function rebuildLanes(){
+  const n = state.config.laneCount;
+  const existing = state.lanes;
+  const lanes = [];
+  for (let i=0;i<n;i++){
+    lanes.push(existing[i] || { laneNo:i+1, cw: makeCW(), md: state.config.hasMDi ? makeMD() : null });
+  }
+  lanes.forEach(l => { if (state.config.hasMDi && !l.md) l.md = makeMD(); if (!state.config.hasMDi) l.md = null; });
+  state.lanes = lanes;
+}
+
+/* ============================================================
+   CALCULATION ENGINE
+   ============================================================ */
+function classify(measuringRange){ return Number(measuringRange) <= 10000 ? "XIII" : "XII"; }
+function eMultiplier(m, wcClass){
+  if (wcClass === "XIII"){
+    if (m>0 && m<=500) return 1;
+    if (m>500 && m<=2000) return 2;
+    if (m>2000 && m<=10000) return 3;
+    return null;
+  } else {
+    if (m>0 && m<=5000) return 1;
+    if (m>5000 && m<=20000) return 2;
+    if (m>20000 && m<=100000) return 3;
+    return null;
+  }
+}
+function evalLoadTest(testLoad, reading, main){
+  if (reading===null||reading===""||isNaN(reading)||testLoad===null||testLoad===""||isNaN(testLoad)) return {error:null, result:null};
+  const wcClass = classify(main.measuringRange);
+  const error = Number(reading) - Number(testLoad);
+  if (Number(testLoad) === 0){
+    return { error, result: Math.abs(error) <= main.eValue ? "PASS" : "FAIL" };
+  }
+  const mult = eMultiplier(Number(testLoad), wcClass);
+  if (mult === null) return { error, result:"FAIL" };
+  return { error, result: Math.abs(error) <= mult*main.eValue ? "PASS" : "FAIL" };
+}
+function fmt(v, decimals){
+  if (v===null || v===undefined || v==="" || isNaN(v)) return "—";
+  return Number(v).toFixed(decimals);
+}
+function daysUntil(dateStr){
+  if (!dateStr) return null;
+  const due = new Date(dateStr);
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((due - today) / (1000*60*60*24));
+}
+
+/* ============================================================
+   TEST-KIT PERSISTENCE
+   ============================================================ */
+const TESTKIT_KEY = "wipotec_calreport_testkit_last";
+function loadTestKitMemory(){
+  try{
+    const raw = localStorage.getItem(TESTKIT_KEY);
+    if (raw){
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved) && saved.length) state.mainInfo.testKitRows = saved;
+    }
+  }catch(e){ /* storage unavailable */ }
+}
+function saveTestKitMemory(){
+  try{ localStorage.setItem(TESTKIT_KEY, JSON.stringify(state.mainInfo.testKitRows)); }catch(e){ /* ignore */ }
+}
+
+/* Standalone WIPOTEC Test Kit Information card — lives on Final Summary. */
+function renderTestKitCard(m){
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <h2>WIPOTEC Test Kit Information</h2>
+    <p class="guide-note">Equipment names are free text. Last-entered values (including added/removed rows) are remembered automatically for next time. Due dates within 30 days are flagged in red on screen only (not shown on the printed/PDF report).</p>
+    <div style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Equipment</th><th>Serial Number</th><th>Certificate No.</th><th>Cal. Date</th><th>Due Date</th></tr></thead>
+      <tbody id="testKitBody"></tbody>
+    </table>
+    </div>
+    <div class="add-row-bar no-print">
+      <button class="btn-sm" id="tkAdd">+ Add equipment</button>
+      <button class="btn-sm danger" id="tkRemove">− Remove last</button>
+      <span class="cap-note">Maximum ${MAX_TESTKIT} items</span>
+    </div>
+  `;
+  const kitBody = card.querySelector("#testKitBody");
+  function paintTestKit(){
+    kitBody.innerHTML = "";
+    m.testKitRows.forEach((item, i) => {
+      const dLeft = daysUntil(item.dueDate);
+      const flagClass = (dLeft !== null && dLeft <= 30) ? "due-flag" : "";
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input data-tk-idx="${i}" data-tk-field="equipment" value="${item.equipment||''}" placeholder="Equipment name"></td>
+        <td><input data-tk-idx="${i}" data-tk-field="serial" value="${item.serial||''}"></td>
+        <td><input data-tk-idx="${i}" data-tk-field="cert" value="${item.cert||''}"></td>
+        <td><input type="date" data-tk-idx="${i}" data-tk-field="calDate" value="${item.calDate||''}"></td>
+        <td><input type="date" data-tk-idx="${i}" data-tk-field="dueDate" value="${item.dueDate||''}" class="${flagClass}"></td>
+      `;
+      kitBody.appendChild(row);
+    });
+    kitBody.querySelectorAll('input:not([type=date])').forEach(inp => {
+      inp.addEventListener("input", () => {
+        m.testKitRows[Number(inp.dataset.tkIdx)][inp.dataset.tkField] = inp.value;
+        saveTestKitMemory();
+      });
+    });
+    kitBody.querySelectorAll('input[type=date]').forEach(inp => {
+      inp.addEventListener("input", () => {
+        m.testKitRows[Number(inp.dataset.tkIdx)][inp.dataset.tkField] = inp.value;
+        saveTestKitMemory();
+        if (inp.dataset.tkField === "dueDate"){
+          const dLeft = daysUntil(inp.value);
+          inp.classList.toggle("due-flag", dLeft !== null && dLeft <= 30);
+        }
+      });
+    });
+  }
+  paintTestKit();
+  card.querySelector("#tkAdd").onclick = () => { if (m.testKitRows.length < MAX_TESTKIT){ m.testKitRows.push(makeTestKitRow("")); saveTestKitMemory(); paintTestKit(); } };
+  card.querySelector("#tkRemove").onclick = () => { if (m.testKitRows.length > 1){ m.testKitRows.pop(); saveTestKitMemory(); paintTestKit(); } };
+  return card;
+}
+
+/* ============================================================
+   GENERIC HELPERS
+   ============================================================ */
+function setDeep(obj, path, value){
+  const keys = path.split(".");
+  let cur = obj;
+  for (let i=0;i<keys.length-1;i++) cur = cur[keys[i]];
+  cur[keys[keys.length-1]] = value;
+}
+function fieldHTML(label, path, value, opts={}){
+  const id = "f_"+path.replace(/[.\[\]]/g,"_");
+  const type = opts.type || "text";
+  const span = opts.span ? ` span-${opts.span}` : "";
+  const req = opts.required ? " required" : "";
+  const compactStyle = opts.compact ? ` style="max-width:50%; margin:0 auto;"` : "";
+  if (type === "select"){
+    const options = opts.options.map(o=>`<option value="${o}" ${o===value?"selected":""}>${o}</option>`).join("");
+    return `<div class="field${span}${req}"${compactStyle}><label>${label}</label><select data-path="${path}" id="${id}">${options}</select></div>`;
+  }
+  if (type === "textarea"){
+    return `<div class="field${span}${req}"${compactStyle}><label>${label}</label><textarea data-path="${path}" id="${id}" rows="${opts.rows||2}">${value||""}</textarea></div>`;
+  }
+  if (opts.suffix){
+    return `<div class="field${span}${req}"${compactStyle}><label>${label}</label><div class="field-with-suffix"><input data-path="${path}" id="${id}" type="${type}" value="${value ?? ''}" placeholder="${opts.placeholder||''}"><span class="unit-label">${opts.suffix}</span></div></div>`;
+  }
+  return `<div class="field${span}${req}"${compactStyle}><label>${label}</label><input data-path="${path}" id="${id}" type="${type}" value="${value ?? ''}" placeholder="${opts.placeholder||''}"></div>`;
+}
+/* bindFields never triggers a re-render — it only writes into the state
+   object, which is what keeps free-text/number inputs from losing focus
+   after every keystroke. Anything needing a live recalculation gets its
+   own listener that patches just the affected DOM nodes instead. */
+function bindFields(container, targetResolver){
+  container.querySelectorAll("[data-path]").forEach(inp => {
+    const evt = (inp.tagName === "SELECT") ? "change" : "input";
+    inp.addEventListener(evt, () => {
+      const target = targetResolver ? targetResolver() : state;
+      setDeep(target, inp.dataset.path, inp.value);
+    });
+  });
+}
+
+/* ---- Generic checklist table ---- */
+function renderChecklistTable(rows){
+  const wrap = document.createElement("div");
+  const toolbar = document.createElement("div");
+  toolbar.className = "add-row-bar no-print";
+  toolbar.style.borderTop = "none";
+  toolbar.style.paddingTop = "0";
+  toolbar.style.marginTop = "0";
+  toolbar.style.marginBottom = "10px";
+  toolbar.innerHTML = `
+    <button class="btn-sm" data-bulk-result>Check good all</button>
+    <button class="btn-sm danger" data-bulk-clear>Clear all</button>
+  `;
+  wrap.appendChild(toolbar);
+
+  const tableHost = document.createElement("div");
+  tableHost.style.overflowX = "auto";
+  const table = document.createElement("table");
+  table.className = "tbl";
+  table.innerHTML = `
+    <thead><tr>
+      <th style="width:30%">Description</th>
+      <th style="width:15%">Result</th>
+      <th>Remark</th>
+      <th class="no-print" style="width:22%">Note</th>
+    </tr></thead>
+    <tbody></tbody>`;
+  const tbody = table.querySelector("tbody");
+  const resultSelects = [];
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    const descCell = row.editableDesc
+      ? `<input type="text" data-row-field="description" placeholder="Description" value="${row.description||''}">`
+      : `<span>${row.description}</span>`;
+    tr.innerHTML = `
+      <td>${descCell}</td>
+      <td><select data-row-field="result">${RESULT_OPTIONS.map(o=>`<option ${o===row.result?"selected":""}>${o}</option>`).join("")}</select></td>
+      <td><input type="text" data-row-field="remark" value="${row.remark||''}" placeholder="Remark"></td>
+      <td class="note-col no-print">${row.editableDesc ? "" : row.note}</td>
+    `;
+    tr.querySelectorAll("[data-row-field]").forEach(inp => {
+      const evt = inp.tagName === "SELECT" ? "change" : "input";
+      inp.addEventListener(evt, () => { row[inp.dataset.rowField] = inp.value; });
+    });
+    resultSelects.push(tr.querySelector('[data-row-field="result"]'));
+    tbody.appendChild(tr);
+  });
+  tableHost.appendChild(table);
+  wrap.appendChild(tableHost);
+
+  toolbar.querySelector("[data-bulk-result]").onclick = () => {
+    rows.forEach((row, i) => { row.result = "Good"; if (resultSelects[i]) resultSelects[i].value = "Good"; });
+  };
+  toolbar.querySelector("[data-bulk-clear]").onclick = () => {
+    rows.forEach((row, i) => {
+      row.result = "N/A";
+      if (resultSelects[i]) resultSelects[i].value = "N/A";
+    });
+  };
+
+  return wrap;
+}
+
+function renderAddCountSection(title, guideNote, arr, maxItems){
+  const cap = maxItems || Infinity;
+  const box = document.createElement("div");
+  box.style.marginTop = "20px";
+  box.innerHTML = `<h3 style="font-size:13px; margin:0 0 4px; font-weight:700;">${title}</h3>
+    <p class="guide-note no-print">${guideNote}</p>
+    <div id="acTableHost"></div>
+    <div class="add-row-bar no-print">
+      <label style="font-size:12px; font-weight:600;">Number of items</label>
+      <input type="number" min="0" max="${isFinite(cap)?cap:''}" id="acCount" value="${arr.length}">
+      <button class="btn-sm" id="acApply">Apply</button>
+      ${isFinite(cap) ? `<span class="cap-note">Maximum ${cap} items</span>` : ""}
+    </div>`;
+  const host = box.querySelector("#acTableHost");
+  function paint(){
+    host.innerHTML = "";
+    if (arr.length) host.appendChild(renderChecklistTable(arr));
+  }
+  paint();
+  box.querySelector("#acApply").addEventListener("click", () => {
+    const n = Math.min(cap, Math.max(0, Number(box.querySelector("#acCount").value) || 0));
+    while (arr.length < n) arr.push(newChecklistRow("", guideNote, true));
+    arr.length = n;
+    paint();
+  });
+  return box;
+}
+
+/* ---- Generic load-test table ---- */
+function buildLoadTable(rows, getTestLoad, getDecimal, main, opts={}){
+  const wrap = document.createElement("div");
+  wrap.style.overflowX = "auto";
+  const table = document.createElement("table");
+  table.className = "tbl";
+  table.innerHTML = `
+    <thead><tr>
+      <th style="width:8%">${opts.posLabel || "No."}</th>
+      <th style="width:18%">Test Load</th>
+      <th style="width:18%">Reading</th>
+      <th style="width:16%">Error</th>
+      <th style="width:14%">Result</th>
+    </tr></thead>
+    <tbody></tbody>`;
+  const tbody = table.querySelector("tbody");
+  rows.forEach((row, i) => {
+    const tr = document.createElement("tr");
+    const label = opts.labelFn ? opts.labelFn(row, i) : (row.pos || row.no || (i+1));
+    tr.innerHTML = `
+      <td>${label}</td>
+      <td class="tl-cell">${opts.freeTestLoad ? `<div class="cell-with-suffix"><input type="number" step="any" data-tl-idx="${i}" value="${row.testLoad ?? ''}"><span class="unit-label">${main.unit}</span></div>` : ''}</td>
+      <td><div class="cell-with-suffix"><input type="number" step="any" data-reading-idx="${i}" value="${row.reading ?? ''}" placeholder="reading"><span class="unit-label">${main.unit}</span></div></td>
+      <td class="err-cell">—</td>
+      <td class="res-cell"><span class="badge wait">—</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  wrap.appendChild(table);
+
+  function updateRow(i){
+    const row = rows[i];
+    const testLoad = getTestLoad(row, i);
+    const decimals = getDecimal();
+    const calc = evalLoadTest(testLoad, row.reading, main);
+    const tr = tbody.children[i];
+    if (!opts.freeTestLoad){
+      tr.querySelector(".tl-cell").textContent = fmt(testLoad, decimals) + " " + main.unit;
+    }
+    tr.querySelector(".err-cell").textContent = calc.error===null ? "—" : (calc.error>=0?"+":"")+fmt(calc.error, decimals)+" "+main.unit;
+    tr.querySelector(".res-cell").innerHTML = calc.result===null ? '<span class="badge wait">—</span>' : `<span class="badge ${calc.result==='PASS'?'pass':'fail'}">${calc.result}</span>`;
+  }
+  function updateAll(){ rows.forEach((_,i)=>updateRow(i)); }
+  updateAll();
+
+  tbody.querySelectorAll("[data-reading-idx]").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const i = Number(inp.dataset.readingIdx);
+      rows[i].reading = inp.value === "" ? null : Number(inp.value);
+      updateRow(i);
+    });
+  });
+  tbody.querySelectorAll("[data-tl-idx]").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const i = Number(inp.dataset.tlIdx);
+      rows[i].testLoad = inp.value === "" ? null : Number(inp.value);
+      updateRow(i);
+    });
+  });
+  return { el: wrap, updateAll };
+}
+
+function eccentricityDiagramSVG(){
+  return `
+  <svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="4" width="82" height="82" fill="var(--teal-tint)" stroke="var(--line)"/>
+    <rect x="94" y="4" width="82" height="82" fill="var(--teal-tint)" stroke="var(--line)"/>
+    <rect x="4" y="94" width="82" height="82" fill="var(--teal-tint)" stroke="var(--line)"/>
+    <rect x="94" y="94" width="82" height="82" fill="var(--teal-tint)" stroke="var(--line)"/>
+    <circle cx="90" cy="90" r="15" fill="var(--paper)" stroke="var(--teal)" stroke-width="2"/>
+    <text x="45" y="50" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)">E</text>
+    <text x="135" y="50" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)">B</text>
+    <text x="45" y="140" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)">D</text>
+    <text x="135" y="140" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)">C</text>
+    <text x="90" y="95" text-anchor="middle" font-size="14" font-weight="700" fill="var(--teal-dark)">A</text>
+  </svg>`;
+}
+
+/* ============================================================
+   STEP DEFINITIONS
+   ============================================================ */
+let currentStepIndex = 0;
+
+function computeSteps(){
+  const steps = [{ key:"config", label:"Document Setup" }];
+  if (state.config.hasMDi === null) return steps;
+  steps.push({ key:"main", label:"Customer Info, Machine Info & System Check List" });
+  state.lanes.forEach((lane, i) => {
+    const laneLabel = state.lanes.length > 1 ? `Lane ${lane.laneNo} Transportation Check List & Weight Testing` : "Transportation Check List & Weight Testing";
+    steps.push({ key:`cw-${i}`, label:laneLabel });
+    if (lane.md){
+      const mdLabel = state.lanes.length > 1 ? `Lane ${lane.laneNo} Metal Detector Check List & Testing` : "Metal Detector Check List & Testing";
+      steps.push({ key:`md-${i}`, label:mdLabel });
+    }
+  });
+  steps.push({ key:"review", label:"Summary" });
+  return steps;
+}
+
+function renderStepper(){
+  const steps = computeSteps();
+  const el = document.getElementById("stepper");
+  el.innerHTML = "";
+  steps.forEach((s, i) => {
+    if (i > 0){
+      const c = document.createElement("div");
+      c.className = "step-connector" + (i <= currentStepIndex ? " done" : "");
+      el.appendChild(c);
+    }
+    const node = document.createElement("div");
+    node.className = "step-node" + (i === currentStepIndex ? " active" : "") + (i < currentStepIndex ? " done" : "");
+    node.innerHTML = `<div class="step-dot"><span>${i+1}</span></div><div class="step-label">${s.label}</div>`;
+    node.onclick = () => { if (i <= currentStepIndex) { currentStepIndex = i; render(); } };
+    el.appendChild(node);
+  });
+}
+
+/* ---- Step: Machine Configuration ---- */
+function renderConfigStep(){
+  const wrap = document.createElement("div");
+  wrap.className = "card";
+  wrap.innerHTML = `
+    <h2>Document Setup</h2>
+    <p class="sub">Choose the number of transportation lanes, then whether a Metal Detector (MDi) is integrated. The step list below updates automatically.</p>
+    <div class="field-grid cols-2" style="margin-bottom:20px;">
+      ${fieldHTML("Document No.", "mainInfo.documentNo", state.mainInfo.documentNo)}
+    </div>
+    <div class="config-row">
+      <div class="config-block">
+        <h3>Number of Lanes</h3>
+        <div class="lane-stepper">
+          <button id="laneMinus">−</button>
+          <div class="lane-count" id="laneCountDisplay">${state.config.laneCount}</div>
+          <button id="lanePlus">+</button>
+        </div>
+      </div>
+      <div class="config-block">
+        <h3>Metal Detector Integrated (MDi)?</h3>
+        <div class="toggle-row">
+          <div class="toggle-btn ${state.config.hasMDi===true?'selected':''}" id="mdiYes">Yes</div>
+          <div class="toggle-btn ${state.config.hasMDi===false?'selected':''}" id="mdiNo">No</div>
+        </div>
+      </div>
+    </div>
+    <div class="config-summary" id="configSummary"></div>
+  `;
+  function updateSummary(){
+    const s = wrap.querySelector("#configSummary");
+    if (state.config.hasMDi === null){ s.textContent = "Select Yes or No for Metal Detector integration to continue."; return; }
+    const parts = [];
+    for (let i=1;i<=state.config.laneCount;i++) parts.push(state.config.laneCount>1 ? `Lane ${i} Transportation${state.config.hasMDi ? " + Metal Detector" : ""}` : `Transportation${state.config.hasMDi ? " + Metal Detector" : ""}`);
+    s.textContent = "Steps generated: Customer/Machine Info → " + parts.join(" → ") + " → Summary";
+  }
+  wrap.querySelector("#laneMinus").onclick = () => { state.config.laneCount = Math.max(1, state.config.laneCount-1); rebuildLanes(); renderStepBody(); };
+  wrap.querySelector("#lanePlus").onclick = () => { state.config.laneCount = Math.min(6, state.config.laneCount+1); rebuildLanes(); renderStepBody(); };
+  wrap.querySelector("#mdiYes").onclick = () => { state.config.hasMDi = true; rebuildLanes(); renderStepBody(); };
+  wrap.querySelector("#mdiNo").onclick = () => { state.config.hasMDi = false; rebuildLanes(); renderStepBody(); };
+  updateSummary();
+  bindFields(wrap, () => state);
+  const docNoInput = wrap.querySelector("#f_mainInfo_documentNo");
+  if (docNoInput) docNoInput.addEventListener("input", () => { document.getElementById("docNoDisplay").textContent = docNoInput.value || "—"; });
+  return wrap;
+}
+
+/* ---- Step: Main Page ---- */
+function renderMainPage(){
+  const m = state.mainInfo;
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div class="card">
+      <h2><span class="section-tag">1</span> Document &amp; Customer Info</h2>
+      <div class="field-grid">
+        ${fieldHTML("Company Name", "companyName", m.companyName, {span:3})}
+        ${fieldHTML("Address", "address", m.address, {span:3, type:"textarea", rows:2})}
+      </div>
+      <div class="field-grid cols-2" style="margin-top:14px;">
+        ${fieldHTML("Country", "country", m.country)}
+        ${fieldHTML("ZIP Code", "zipCode", m.zipCode)}
+      </div>
+      <h3 class="subhead">Point of Contact</h3>
+      <div class="field-grid cols-3">
+        ${fieldHTML("Name", "pocName", m.pocName)}
+        ${fieldHTML("Phone", "pocPhone", m.pocPhone)}
+        ${fieldHTML("Email", "pocEmail", m.pocEmail)}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-tag">2</span> Machine Info</h2>
+      <div class="field-grid">
+        ${fieldHTML("Serial No.", "machineSerial", m.machineSerial, {required:true})}
+        ${fieldHTML("Model", "machineModelType", m.machineModelType)}
+        ${fieldHTML("Software Version", "softwareVersion", m.softwareVersion)}
+        ${fieldHTML("Model No.", "modelNumber", m.modelNumber)}
+        ${fieldHTML("Manufacturing Year", "manufacturingYear", m.manufacturingYear)}
+        ${fieldHTML("Customer Asset No. / Location", "location", m.location)}
+      </div>
+      <h3 class="subhead">Weight Info</h3>
+      <div class="field-grid cols-2">
+        ${fieldHTML("Measuring Range", "measuringRange", m.measuringRange, {type:"number", required:true})}
+        ${fieldHTML("Display Value", "displayValue", m.displayValue, {type:"number"})}
+      </div>
+      <div class="field-grid cols-2 no-print" style="margin-top:14px;">
+        ${fieldHTML("Decimal Place", "decimal", m.decimal, {type:"number"})}
+        ${fieldHTML("Unit", "unit", m.unit, {type:"select", options:["g","kg"]})}
+      </div>
+      <p class="guide-note">Decimal Place and Unit are used only to calculate and format weight values shown elsewhere in the report — they are not printed on the generated file. Weighing cell class is derived automatically from Measuring Range (≤10,000 → Class XIII, &gt;10,000 → Class XII).</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-tag">3</span> System Check List</h2>
+      <div id="systemChecklistHost"></div>
+      <div id="additionalSystemHost"></div>
+      <div id="optionalChecklistHost"></div>
+    </div>
+  `;
+
+  wrap.querySelector("#systemChecklistHost").appendChild(renderChecklistTable(m.systemChecklist));
+  wrap.querySelector("#additionalSystemHost").appendChild(
+    renderAddCountSection("Additional System Checklist", "e.g. Extra conveyor, cover guard see in WO", m.additionalSystemChecklist)
+  );
+  wrap.querySelector("#optionalChecklistHost").appendChild(
+    renderAddCountSection("Optional Check List", "e.g. Connection Port USB, Ethernet, Serial port condition, Variable Data Connection, RF ID see in WO", m.optionalChecklist)
+  );
+
+  bindFields(wrap, () => m);
+  return wrap;
+}
+
+/* ---- Step: CW Test ---- */
+function renderCWPage(laneIndex){
+  const lane = state.lanes[laneIndex];
+  const cw = lane.cw;
+  const main = state.mainInfo;
+  const wrap = document.createElement("div");
+  const singleLane = state.lanes.length <= 1;
+  const laneTitle = singleLane ? "" : `Lane ${lane.laneNo} — `;
+  const checklistTitle = singleLane ? "Transportation System Check List" : `Transportation Lane No. ${lane.laneNo} System Check List`;
+  const operateTitle = singleLane ? "Operate in Good Condition" : `Lane ${lane.laneNo} Operate in Good Condition`;
+
+  wrap.innerHTML = `
+    <div class="callout"><div>🧭</div><div><b>${laneTitle}Transportation Check List &amp; Weight Testing</b> Tolerances follow the weighing class derived from Measuring Range (e = ${main.eValue} ${main.unit}).</div></div>
+
+    <div class="card">
+      <h2><span class="section-tag">W/C</span> Weigh Cell Info</h2>
+      <div class="field-grid">
+        ${fieldHTML("WC Type", `lanes.${laneIndex}.cw.wcType`, cw.wcType, {span:2})}
+        ${fieldHTML("Serial Number", `lanes.${laneIndex}.cw.serialNumber`, cw.serialNumber)}
+      </div>
+      <h3 class="subhead">Weighing Specification</h3>
+      <div class="field-grid">
+        ${fieldHTML("Unit", "mainInfo.unit", main.unit, {type:"select", options:["g","kg"]})}
+        ${fieldHTML("e value", "mainInfo.eValue", main.eValue, {type:"number"})}
+        ${fieldHTML("Display Value", "mainInfo.displayValue", main.displayValue, {type:"number"})}
+        ${fieldHTML("Measuring Range", "mainInfo.measuringRange", main.measuringRange, {type:"number"})}
+        ${fieldHTML("Dead Load", "mainInfo.deadLoad", main.deadLoad, {type:"number"})}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-tag">✓</span> ${checklistTitle}</h2>
+      <div id="cwChecklistHost"></div>
+      <div id="cwAdditionalHost"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-tag">📈</span> Linearity Test</h2>
+      <p class="guide-note">Common calibration points are 0%, 5%, 15% and 50% of Max Load — enter any Test Load value directly for each row.</p>
+      <div id="linearityHost"></div>
+      <div class="add-row-bar no-print">
+        <button class="btn-sm" id="linAdd">+ Add test point</button>
+        <button class="btn-sm danger" id="linRemove">− Remove last</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-tag">⚖</span> Eccentricity Test</h2>
+      <div class="diagram-wrap">${eccentricityDiagramSVG()}</div>
+      <div class="field-grid cols-2" style="margin-bottom:14px;">
+        ${fieldHTML("Eccentricity Test Load", `lanes.${laneIndex}.cw.eccentricity.testLoad`, cw.eccentricity.testLoad, {type:"number"})}
+      </div>
+      <div id="eccentricityHost"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-tag">🔁</span> Repeatability Test</h2>
+      <p class="guide-note">Counted in sets — each set is one 0 g reading plus one Test Load reading (e.g. Test Load = 500: 0 + 500 = 1 set). Default is 5 sets.</p>
+      <div class="field-grid cols-2" style="margin-bottom:14px;">
+        ${fieldHTML("Repeatability Test Load", `lanes.${laneIndex}.cw.repeatability.testLoad`, cw.repeatability.testLoad, {type:"number"})}
+      </div>
+      <div id="repeatabilityHost"></div>
+      <div class="add-row-bar no-print">
+        <button class="btn-sm" id="repAdd">+ Add set</button>
+        <button class="btn-sm danger" id="repRemove">− Remove last set</button>
+        <span class="cap-note">Maximum ${MAX_REPEAT_SETS} sets (${MAX_REPEAT_SETS*2} tests)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-tag">⚡</span> Product Dynamic Test / Spot Check</h2>
+      <div id="dynamicHost"></div>
+      <div class="add-row-bar no-print">
+        <button class="btn-sm" id="dynAdd">+ Add product</button>
+        <button class="btn-sm danger" id="dynRemove">− Remove product</button>
+        <span class="cap-note">Maximum ${MAX_PRODUCTS} products</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-tag">✔</span> ${operateTitle}</h2>
+      <div class="toggle-row" style="max-width:280px;" id="operateToggle">
+        <div class="toggle-btn ${cw.operateGoodCondition==='Yes'?'selected':''}" data-val="Yes">Yes</div>
+        <div class="toggle-btn ${cw.operateGoodCondition==='No'?'selected':''}" data-val="No">No</div>
+      </div>
+    </div>
+  `;
+
+  wrap.querySelector("#operateToggle").querySelectorAll("[data-val]").forEach(btn => {
+    btn.onclick = () => { cw.operateGoodCondition = btn.dataset.val; renderStepBody(); };
+  });
+
+  wrap.querySelector("#cwChecklistHost").appendChild(renderChecklistTable(cw.checklist));
+  wrap.querySelector("#cwAdditionalHost").appendChild(
+    renderAddCountSection("Additional System Checklist", "e.g. Bin Full sensor, Product flow control see in WO", cw.additionalChecklist)
+  );
+
+  const linHandle = buildLoadTable(cw.linearity.rows, (row)=>row.testLoad, ()=>state.mainInfo.decimal, main, {freeTestLoad:true});
+  wrap.querySelector("#linearityHost").appendChild(linHandle.el);
+  wrap.querySelector("#linAdd").onclick = () => { cw.linearity.rows.push(makeLoadRow(0)); renderStepBody(); };
+  wrap.querySelector("#linRemove").onclick = () => { if (cw.linearity.rows.length>1) cw.linearity.rows.pop(); renderStepBody(); };
+
+  const eccHandle = buildLoadTable(cw.eccentricity.rows, ()=>cw.eccentricity.testLoad, ()=>state.mainInfo.decimal, main, {posLabel:"Position"});
+  wrap.querySelector("#eccentricityHost").appendChild(eccHandle.el);
+
+  const repHandle = buildLoadTable(cw.repeatability.rows, (row,i)=> i%2===0 ? 0 : cw.repeatability.testLoad, ()=>state.mainInfo.decimal, main, {posLabel:"Test No.", labelFn:(row,i)=> i%2===0 ? (Math.floor(i/2)+1) : ""});
+  wrap.querySelector("#repeatabilityHost").appendChild(repHandle.el);
+  wrap.querySelector("#repAdd").onclick = () => { if (cw.repeatability.sets < MAX_REPEAT_SETS){ cw.repeatability.sets++; cw.repeatability.rows.push({reading:null}); cw.repeatability.rows.push({reading:null}); renderStepBody(); } };
+  wrap.querySelector("#repRemove").onclick = () => { if (cw.repeatability.sets>1){ cw.repeatability.sets--; cw.repeatability.rows.pop(); cw.repeatability.rows.pop(); renderStepBody(); } };
+
+  const dynHost = wrap.querySelector("#dynamicHost");
+  function paintDynamic(){
+    dynHost.innerHTML = "";
+    cw.dynamicTests.forEach((d, i) => {
+      const block = document.createElement("div");
+      block.style.marginBottom = "16px";
+      block.style.paddingBottom = "16px";
+      block.style.borderBottom = i < cw.dynamicTests.length-1 ? "1px dashed var(--line)" : "none";
+      const base = `lanes.${laneIndex}.cw.dynamicTests.${i}`;
+      block.innerHTML = `
+        <div class="field-grid cols-2" style="margin-bottom:14px;">
+          ${fieldHTML("Article Name", `${base}.articleName`, d.articleName)}
+          ${fieldHTML("Article Number", `${base}.articleNumber`, d.articleNumber)}
+        </div>
+        <h4 class="minihead">Product Dimension</h4>
+        <div class="field-grid cols-3" style="margin-bottom:14px;">
+          ${fieldHTML("Length (mm)", `${base}.length`, d.length, {type:"number"})}
+          ${fieldHTML("Width (mm)", `${base}.width`, d.width, {type:"number"})}
+          ${fieldHTML("Height (mm)", `${base}.height`, d.height, {type:"number"})}
+        </div>
+        <div class="field-grid cols-4" style="margin-bottom:14px;">
+          ${fieldHTML("Filter Frequency (Hz)", `${base}.filterFrequency`, d.filterFrequency, {type:"number"})}
+          ${fieldHTML("Speed Value", `${base}.speedValue`, d.speedValue, {type:"number"})}
+          ${fieldHTML("Speed Type", `${base}.speedType`, d.speedType, {type:"select", options:["Pcs/min","m/sec","m/min"]})}
+          ${fieldHTML("Quantity Test", `${base}.qtyTest`, d.qtyTest, {type:"number"})}
+        </div>
+        <div class="field-grid cols-3">
+          ${fieldHTML("Product Weight", `${base}.productWeight`, d.productWeight, {type:"number", suffix:main.unit})}
+          ${fieldHTML("Mean Value", `${base}.meanValue`, d.meanValue, {type:"number", suffix:main.unit})}
+          ${fieldHTML("Standard Deviation", `${base}.stdDeviation`, d.stdDeviation, {type:"number", suffix:main.unit})}
+        </div>
+      `;
+      dynHost.appendChild(block);
+    });
+    bindFields(dynHost, () => state);
+  }
+  paintDynamic();
+  wrap.querySelector("#dynAdd").onclick = () => { if (cw.dynamicTests.length < MAX_PRODUCTS){ cw.dynamicTests.push(makeDynamicTest()); renderStepBody(); } };
+  wrap.querySelector("#dynRemove").onclick = () => { if (cw.dynamicTests.length>1){ cw.dynamicTests.pop(); renderStepBody(); } };
+
+  const eccLoadInput = wrap.querySelector(`#f_lanes_${laneIndex}_cw_eccentricity_testLoad`);
+  if (eccLoadInput) eccLoadInput.addEventListener("input", () => { cw.eccentricity.testLoad = eccLoadInput.value===""?null:Number(eccLoadInput.value); eccHandle.updateAll(); });
+  const repLoadInput = wrap.querySelector(`#f_lanes_${laneIndex}_cw_repeatability_testLoad`);
+  if (repLoadInput) repLoadInput.addEventListener("input", () => { cw.repeatability.testLoad = repLoadInput.value===""?null:Number(repLoadInput.value); repHandle.updateAll(); });
+
+  const unitSelect = wrap.querySelector("#f_mainInfo_unit");
+  if (unitSelect) unitSelect.addEventListener("change", () => { state.mainInfo.unit = unitSelect.value; renderStepBody(); });
+
+  bindFields(wrap, () => state);
+  return wrap;
+}
+
+/* ---- Step: MD Test ---- */
+function renderMDPage(laneIndex){
+  const lane = state.lanes[laneIndex];
+  const md = lane.md;
+  const wrap = document.createElement("div");
+  const singleLane = state.lanes.length <= 1;
+  const laneTitle = singleLane ? "" : `Lane ${lane.laneNo} — `;
+
+  wrap.innerHTML = `
+    <div class="callout"><div>🧲</div><div><b>${laneTitle}Metal Detector Check List &amp; Testing</b> Metal detector physical check &amp; detection verification.</div></div>
+    <div class="card">
+      <h2><span class="section-tag">MD</span> Metal Detector Info</h2>
+      <div class="field-grid cols-2">
+        ${fieldHTML("Model Type", `lanes.${laneIndex}.md.mdType`, md.mdType)}
+        ${fieldHTML("Serial Number", `lanes.${laneIndex}.md.serialNumber`, md.serialNumber)}
+      </div>
+      <div class="field-grid cols-2" style="margin-top:14px;">
+        ${fieldHTML("Tunnel Height (mm)", `lanes.${laneIndex}.md.tunnelHeight`, md.tunnelHeight, {type:"number"})}
+        ${fieldHTML("Tunnel Width (mm)", `lanes.${laneIndex}.md.tunnelWidth`, md.tunnelWidth, {type:"number"})}
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="section-tag">✓</span> Physical Check List</h2>
+      <div id="mdChecklistHost"></div>
+      <div id="mdAdditionalHost"></div>
+    </div>
+    <div class="card">
+      <h2><span class="section-tag">🎯</span> Detection Verification</h2>
+      <div id="articlesHost"></div>
+      <div class="add-row-bar no-print">
+        <button class="btn-sm" id="artAdd">+ Add article</button>
+        <button class="btn-sm danger" id="artRemove">− Remove last</button>
+        <span class="cap-note">Maximum ${MAX_ARTICLES} articles</span>
+      </div>
+    </div>
+  `;
+
+  wrap.querySelector("#mdChecklistHost").appendChild(renderChecklistTable(md.checklist));
+  wrap.querySelector("#mdAdditionalHost").appendChild(
+    renderAddCountSection("Additional Physical Check List", "Add any extra physical inspection items not covered above.", md.additionalPhysicalChecklist, 5)
+  );
+
+  const artHost = wrap.querySelector("#articlesHost");
+  function detectionRowHTML(materialKey, materialLabel, mat, base){
+    return `
+      <tr>
+        <td>${materialLabel}</td>
+        <td><input data-path="${base}.${materialKey}.id" value="${mat.id}" placeholder="ID"></td>
+        <td><input data-path="${base}.${materialKey}.size" value="${mat.size}" placeholder="mm"></td>
+        <td><select data-path="${base}.${materialKey}.front">${PFN_OPTIONS.map(o=>`<option ${o===mat.front?"selected":""}>${o}</option>`).join("")}</select></td>
+        <td><select data-path="${base}.${materialKey}.middle">${PFN_OPTIONS.map(o=>`<option ${o===mat.middle?"selected":""}>${o}</option>`).join("")}</select></td>
+        <td><select data-path="${base}.${materialKey}.back">${PFN_OPTIONS.map(o=>`<option ${o===mat.back?"selected":""}>${o}</option>`).join("")}</select></td>
+      </tr>`;
+  }
+  function extraTypeRowHTML(idx, entry, base){
+    return `
+      <tr>
+        <td><input data-path="${base}.extraTypes.${idx}.type" value="${entry.type||''}" placeholder="Type name"></td>
+        <td><input data-path="${base}.extraTypes.${idx}.id" value="${entry.id||''}" placeholder="ID"></td>
+        <td><input data-path="${base}.extraTypes.${idx}.size" value="${entry.size||''}" placeholder="mm"></td>
+        <td><select data-path="${base}.extraTypes.${idx}.front">${PFN_OPTIONS.map(o=>`<option ${o===entry.front?"selected":""}>${o}</option>`).join("")}</select></td>
+        <td><select data-path="${base}.extraTypes.${idx}.middle">${PFN_OPTIONS.map(o=>`<option ${o===entry.middle?"selected":""}>${o}</option>`).join("")}</select></td>
+        <td><select data-path="${base}.extraTypes.${idx}.back">${PFN_OPTIONS.map(o=>`<option ${o===entry.back?"selected":""}>${o}</option>`).join("")}</select></td>
+      </tr>`;
+  }
+  function paintArticles(){
+    artHost.innerHTML = "";
+    md.articles.forEach((art, i) => {
+      const base = `lanes.${laneIndex}.md.articles.${i}`;
+      const block = document.createElement("div");
+      block.style.marginBottom = "18px";
+      block.style.paddingBottom = "18px";
+      block.style.borderBottom = i < md.articles.length-1 ? "1px dashed var(--line)" : "none";
+      const linkedProduct = lane.cw.dynamicTests[i] || null;
+      block.innerHTML = `
+        <div class="field-grid cols-2" style="margin-bottom:12px;">
+          <div class="field"><label>Article Name</label><input value="${linkedProduct ? linkedProduct.articleName : ''}" disabled placeholder="${linkedProduct ? '' : 'No matching product on CW page'}"></div>
+          <div class="field"><label>Article No.</label><input value="${linkedProduct ? linkedProduct.articleNumber : ''}" disabled placeholder="${linkedProduct ? '' : 'No matching product on CW page'}"></div>
+        </div>
+        <p class="guide-note no-print" style="margin-top:-8px;">Article Name / No. are synced from Product Dynamic Test / Spot Check (Product ${i+1} on the CW page).</p>
+        <div class="field-grid" style="margin-bottom:12px;">
+          ${fieldHTML("Detection Level", `${base}.detectionLevel`, art.detectionLevel)}
+          ${fieldHTML("Phase Angle", `${base}.phaseAngle`, art.phaseAngle)}
+          ${fieldHTML("Stretching", `${base}.stretching`, art.stretching)}
+        </div>
+        <div style="overflow-x:auto;">
+        <table class="tbl">
+          <thead><tr><th>Type</th><th>ID</th><th>Size (mm)</th><th>Front</th><th>Middle</th><th>Back</th></tr></thead>
+          <tbody>
+            ${detectionRowHTML("ferrous","Ferrous", art.ferrous, base)}
+            ${detectionRowHTML("nonFerrous","Non-Ferrous", art.nonFerrous, base)}
+            ${detectionRowHTML("stainless","Stainless Steel 304", art.stainless, base)}
+            ${art.extraTypes.map((et,idx)=>extraTypeRowHTML(idx, et, base)).join("")}
+          </tbody>
+        </table>
+        </div>
+        <div class="add-row-bar no-print">
+          <button class="btn-sm" data-extra-add="${i}">+ Add type</button>
+          <button class="btn-sm danger" data-extra-remove="${i}">− Remove last type</button>
+        </div>
+      `;
+      artHost.appendChild(block);
+    });
+    artHost.querySelectorAll("[data-extra-add]").forEach(btn => {
+      btn.onclick = () => { const art = md.articles[Number(btn.dataset.extraAdd)]; if (art.extraTypes.length < MAX_EXTRA_TYPES){ art.extraTypes.push(newExtraType()); renderStepBody(); } };
+    });
+    artHost.querySelectorAll("[data-extra-remove]").forEach(btn => {
+      btn.onclick = () => { const art = md.articles[Number(btn.dataset.extraRemove)]; if (art.extraTypes.length>0){ art.extraTypes.pop(); renderStepBody(); } };
+    });
+    bindFields(artHost, () => state);
+  }
+  paintArticles();
+  wrap.querySelector("#artAdd").onclick = () => { if (md.articles.length < MAX_ARTICLES){ md.articles.push(makeArticle()); renderStepBody(); } };
+  wrap.querySelector("#artRemove").onclick = () => { if (md.articles.length>1){ md.articles.pop(); renderStepBody(); } };
+
+  bindFields(wrap, () => state);
+  return wrap;
+}
+
+/* ---- Step: Summary ---- */
+function renderReview(){
+  const fr = state.finalReview;
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div class="card">
+      <h2>Summary</h2>
+      <div class="field-grid cols-3" style="margin-bottom:8px;">
+        <div class="field"><label>Company Name</label><input value="${state.mainInfo.companyName}" disabled></div>
+        <div class="field"><label>Serial No.</label><input value="${state.mainInfo.machineSerial}" disabled></div>
+        <div class="field"><label>Model</label><input value="${state.mainInfo.machineModelType}" disabled></div>
+      </div>
+      <h3 style="font-size:13px; margin:0 0 10px;">Machine Operate in Good Condition</h3>
+      <div class="toggle-row" style="max-width:280px; margin-bottom:18px;" id="mgcToggle">
+        <div class="toggle-btn ${fr.machineGoodCondition==='Yes'?'selected':''}" data-val="Yes">Yes</div>
+        <div class="toggle-btn ${fr.machineGoodCondition==='No'?'selected':''}" data-val="No">No</div>
+      </div>
+      <div class="field" style="margin-top:4px;">
+        <label>Additional Service Comments</label>
+        <textarea data-path="finalReview.additionalComments" rows="3">${fr.additionalComments||""}</textarea>
+      </div>
+    </div>
+
+    <div class="card" id="testKitHost"></div>
+    <div class="card" id="custSigCard"></div>
+    <div class="card" id="techSigCard"></div>
+  `;
+  wrap.querySelector("#mgcToggle").querySelectorAll("[data-val]").forEach(btn => {
+    btn.onclick = () => { fr.machineGoodCondition = btn.dataset.val; renderStepBody(); };
+  });
+
+  wrap.querySelector("#testKitHost").replaceWith(renderTestKitCard(state.mainInfo));
+  renderSignatureBlock(wrap.querySelector("#custSigCard"), fr.customer, "Customer Signature", "finalReview.customer");
+  renderSignatureBlock(wrap.querySelector("#techSigCard"), fr.technician, "Service Technician Signature", "finalReview.technician");
+
+  bindFields(wrap, () => state);
+  return wrap;
+}
+
+/* Reusable signature block: lets the person choose between drawing on a
+   touch-screen/canvas pad or importing a signature image. Drawing is
+   done with Pointer Events (covers mouse, touch and pen uniformly) and
+   is captured to state as a PNG data URL on each stroke, without ever
+   calling renderStepBody() mid-stroke (that would wipe the canvas). */
+function renderSignatureBlock(host, person, title, pathPrefix){
+  let isDraw = person.signatureMode !== "image";
+  host.innerHTML = `
+    <h2>${title}</h2>
+    <div class="toggle-row" style="max-width:340px; margin-bottom:14px;" data-mode-toggle>
+      <div class="toggle-btn ${isDraw?'selected':''}" data-mode="draw">Sign (Touch Screen)</div>
+      <div class="toggle-btn ${!isDraw?'selected':''}" data-mode="image">Import Image</div>
+    </div>
+    <div class="sig-box" style="margin-bottom:16px;" data-sig-area></div>
+    <div class="field-grid cols-2">
+      ${fieldHTML("Name", `${pathPrefix}.name`, person.name)}
+      ${fieldHTML("Date", `${pathPrefix}.date`, person.date, {type:"date"})}
+    </div>
+  `;
+  const area = host.querySelector("[data-sig-area]");
+
+  function paintArea(){
+    area.innerHTML = "";
+    if (isDraw){
+      area.innerHTML = `
+        <canvas width="500" height="160" style="width:100%; max-width:420px; height:auto; aspect-ratio:500/160; touch-action:none; border:1px solid var(--line); border-radius:8px; background:#fff; display:block; margin:0 auto 10px;"></canvas>
+        <button class="btn-sm danger no-print" data-sig-clear>Clear signature</button>
+      `;
+      const canvas = area.querySelector("canvas");
+      const ctx = canvas.getContext("2d");
+      ctx.strokeStyle = "#1b2b2b"; ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      if (person.signatureDataUrl){
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        img.src = person.signatureDataUrl;
+      }
+      let drawing = false, last = null;
+      function pos(e){ const r = canvas.getBoundingClientRect(); return { x:(e.clientX-r.left)*(canvas.width/r.width), y:(e.clientY-r.top)*(canvas.height/r.height) }; }
+      canvas.addEventListener("pointerdown", e => { drawing = true; last = pos(e); canvas.setPointerCapture(e.pointerId); });
+      canvas.addEventListener("pointermove", e => { if (!drawing) return; const p = pos(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p; });
+      function endStroke(){ if (drawing){ drawing = false; person.signatureDataUrl = canvas.toDataURL("image/png"); } }
+      canvas.addEventListener("pointerup", endStroke);
+      canvas.addEventListener("pointerleave", endStroke);
+      area.querySelector("[data-sig-clear]").onclick = () => { ctx.clearRect(0,0,canvas.width,canvas.height); person.signatureDataUrl = null; };
+    } else {
+      area.innerHTML = `
+        ${person.signatureDataUrl ? `<img class="sig-preview" src="${person.signatureDataUrl}">` : `<p style="opacity:.6; font-size:12.5px; margin:0 0 10px;">No signature imported yet</p>`}
+        <input type="file" accept="image/*" class="no-print" data-sig-upload>
+        ${person.signatureDataUrl ? `<div style="margin-top:8px;"><button class="btn-sm danger no-print" data-sig-clear>Remove signature</button></div>` : ""}
+      `;
+      area.querySelector("[data-sig-upload]").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => { person.signatureDataUrl = reader.result; paintArea(); };
+        reader.readAsDataURL(file);
+      });
+      const clearBtn = area.querySelector("[data-sig-clear]");
+      if (clearBtn) clearBtn.onclick = () => { person.signatureDataUrl = null; paintArea(); };
+    }
+  }
+  paintArea();
+
+  host.querySelectorAll("[data-mode]").forEach(btn => {
+    btn.onclick = () => {
+      person.signatureMode = btn.dataset.mode;
+      isDraw = btn.dataset.mode === "draw";
+      host.querySelectorAll("[data-mode]").forEach(b => b.classList.toggle("selected", b.dataset.mode === person.signatureMode));
+      paintArea();
+    };
+  });
+}
+
+/* ============================================================
+   RENDER LOOP
+   ============================================================ */
+function renderStepBody(){
+  const steps = computeSteps();
+  if (currentStepIndex > steps.length-1) currentStepIndex = steps.length-1;
+  const step = steps[currentStepIndex];
+  const body = document.getElementById("stepBody");
+  body.innerHTML = "";
+  if (!step) return;
+  if (step.key === "config") body.appendChild(renderConfigStep());
+  else if (step.key === "main") body.appendChild(renderMainPage());
+  else if (step.key.startsWith("cw-")) body.appendChild(renderCWPage(Number(step.key.split("-")[1])));
+  else if (step.key.startsWith("md-")) body.appendChild(renderMDPage(Number(step.key.split("-")[1])));
+  else if (step.key === "review") body.appendChild(renderReview());
+
+  document.getElementById("docNoDisplay").textContent = state.mainInfo.documentNo || "—";
+  renderStepper();
+  updateNextEnabled();
+}
+
+function updateNextEnabled(){
+  const steps = computeSteps();
+  const step = steps[currentStepIndex];
+  const btnNext = document.getElementById("btnNext");
+  const btnBack = document.getElementById("btnBack");
+  const btnPrint = document.getElementById("btnPrint");
+  btnBack.disabled = currentStepIndex === 0;
+  btnBack.style.opacity = currentStepIndex === 0 ? .4 : 1;
+  btnPrint.style.display = (step && step.key === "config") ? "none" : "";
+
+  let canProceed = true;
+  if (step && step.key === "config") canProceed = state.config.hasMDi !== null;
+  btnNext.disabled = !canProceed;
+  btnNext.textContent = currentStepIndex >= steps.length - 1 ? "Generate" : "Next →";
+}
+
+function render(){ renderStepper(); renderStepBody(); }
+
+const API_BASE_URL = "";
+
+function showStatusBanner(message, isError){
+  let el = document.getElementById("statusBanner");
+  if (!el){
+    el = document.createElement("div");
+    el.id = "statusBanner";
+    el.className = "no-print";
+    el.style.cssText = "position:fixed; left:50%; bottom:84px; transform:translateX(-50%); z-index:50; padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,.18); max-width:min(640px, 92vw); text-align:center; line-height:1.4;";
+    document.body.appendChild(el);
+  }
+  el.style.background = isError ? "var(--red)" : "var(--teal)";
+  el.style.color = "#fff";
+  el.textContent = message;
+  el.style.display = "block";
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => { el.style.display = "none"; }, isError ? 9000 : 3500);
+}
+
+async function generatePdf(){
+  const btnNext = document.getElementById("btnNext");
+  const originalText = btnNext.textContent;
+
+  if (window.location.protocol === "file:"){
+    showStatusBanner("This page was opened as a local file, so it has no server to generate a PDF. Double-click Run_PV.bat instead — it starts the server; then open this page from the Home screen (http://127.0.0.1:8000/).", true);
+    return;
+  }
+
+  btnNext.disabled = true;
+  btnNext.textContent = "Generating…";
+  try{
+    const response = await fetch(`${API_BASE_URL}/cwcr/generate-pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state)
+    });
+    if (!response.ok){
+      let detail = "";
+      try{ detail = (await response.json()).detail || ""; }catch(e){}
+      throw new Error(detail || `Server returned ${response.status}`);
+    }
+    const blob = await response.blob();
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : "CWCR_Report.pdf";
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    showStatusBanner("PDF generated: " + filename, false);
+  }catch(err){
+    const hint = (err.message === "Failed to fetch")
+      ? "the server isn't reachable — make sure Run_PV.bat is running (check the \"WIPOTEC PV Server\" window in the taskbar) and that you opened this page from http://127.0.0.1:8000/, not by double-clicking the file"
+      : err.message;
+    showStatusBanner("Could not generate PDF — " + hint, true);
+  }finally{
+    btnNext.disabled = false;
+    btnNext.textContent = originalText;
+  }
+}
+
+document.getElementById("btnNext").addEventListener("click", () => {
+  const steps = computeSteps();
+  if (currentStepIndex < steps.length - 1){ currentStepIndex++; render(); window.scrollTo({top:0, behavior:"smooth"}); }
+  else { generatePdf(); }
+});
+document.getElementById("btnBack").addEventListener("click", () => {
+  if (currentStepIndex > 0){ currentStepIndex--; render(); window.scrollTo({top:0, behavior:"smooth"}); }
+});
+document.getElementById("btnPrint").addEventListener("click", () => window.print());
+
+fetch(`${API_BASE_URL}/cwcr/version`).then(r => r.json()).then(d => {
+  const badge = document.getElementById("versionBadge");
+  if (badge && d.version) badge.textContent = "v" + d.version;
+}).catch(() => { /* backend not reachable yet — keep the static fallback badge */ });
+
+loadTestKitMemory();
+rebuildLanes();
+render();
+</script>
+</body>
+</html>

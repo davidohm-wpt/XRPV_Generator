@@ -97,6 +97,7 @@ import traceback
 from jinja2 import Template
 from radiation_safety import router as rs_router  # X-Ray Radiation Safety (XRSC) form + PDF
 from preventive_maintenance import router as pm_router  # X-Ray Preventive Maintenance (PM) form + PDF
+from cwcr import router as cwcr_router  # Checkweigher Calibration Report (CWCR) form + PDF
 
 # --- Logging setup ---
 LOG_PATH = BASE_DIR / "pv_server.log"
@@ -112,6 +113,7 @@ logger = logging.getLogger("pv_server")
 app = FastAPI()
 app.include_router(rs_router)
 app.include_router(pm_router)
+app.include_router(cwcr_router)
 
 app.add_middleware(
     CORSMiddleware,

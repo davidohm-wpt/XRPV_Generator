@@ -12,7 +12,7 @@
     .head h2 { color: #008080; margin: 0; }
     .head img { height: 34px; width: auto; }
     .sub { color: #666; font-size: 14px; margin: 14px 0 22px; }
-    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; }
     .card { display: flex; flex-direction: column; text-decoration: none; color: inherit; border: 1px solid #d5e3e3; border-top: 4px solid #008080; border-radius: 8px; padding: 22px 18px; background: #fafdfd; transition: transform .15s, box-shadow .15s; }
     a.card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,128,128,.18); }
     .card .code { font-size: 12px; font-weight: bold; color: #008080; letter-spacing: 1px; }
@@ -49,6 +49,12 @@
       <span class="code">Wipotec Radiation Check</span>
       <h3>Radiation Safety</h3>
       <p>X-ray radiation safety check: interlocks, warning labels and the external radiation survey.</p>
+      <span class="go">Open form &rarr;</span>
+    </a>
+    <a class="card" href="/cwcr.html">
+      <span class="code">Wipotec CW Calibration</span>
+      <h3>Checkweigher Calibration</h3>
+      <p>Calibration report for checkweigher machines: load tests, lanes and results with automatic pass/fail evaluation.</p>
       <span class="go">Open form &rarr;</span>
     </a>
   </div>
