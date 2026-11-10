@@ -31,6 +31,12 @@
 
   .app-header{display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:20px; border-bottom:2px solid var(--teal);}
   .brand{display:flex; align-items:center; gap:12px;}
+  .home-card{display:inline-flex; align-items:center; gap:12px; padding:9px 20px 9px 13px; background:var(--paper); border:2px solid var(--teal); border-radius:12px; color:var(--teal-dark); text-decoration:none; box-shadow:0 2px 8px rgba(0,153,153,.18); transition:background .15s,color .15s,transform .15s; margin-right:6px;}
+  .home-card svg{width:28px; height:28px; flex:none;}
+  .home-card span{display:flex; flex-direction:column; line-height:1.15;}
+  .home-card b{font-size:17px; font-weight:700;}
+  .home-card small{font-size:11px; font-weight:600; opacity:.75;}
+  .home-card:hover{background:var(--teal); color:#fff; transform:translateY(-1px);}
   .brand-mark{width:38px; height:38px; border-radius:8px; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex:none;}
   .brand-text h1{margin:0; font-size:17px; font-weight:700; letter-spacing:-.01em;}
   .brand-text p{margin:2px 0 0; font-size:12.5px; color:var(--teal-dark); opacity:.85;}
@@ -141,6 +147,7 @@
 <div class="shell">
   <div class="app-header">
     <div class="brand">
+      <a class="home-card no-print" href="/" title="Back to the home menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h4.5v-5.5h4v5.5h4.5V10"/></svg><span><b>Home</b><small>Back to menu</small></span></a>
       <div class="brand-mark">WT</div>
       <div class="brand-text">
         <h1>CWCR</h1>
@@ -148,7 +155,6 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:16px;">
-      <a href="/" style="font-size:12px; font-weight:700; color:var(--teal-dark); text-decoration:none;">&larr; Home</a>
       <span id="versionBadge" style="font-size:11px; font-weight:700; color:var(--teal-dark); background:var(--teal-tint); border-radius:5px; padding:3px 9px;">v1.0.6.2</span>
       <div class="doc-no">Document No.<br><span id="docNoDisplay">—</span></div>
     </div>
