@@ -101,3 +101,6 @@ PV_Certificate_*.pdf
 # Large release archives and temporary backups must never be pushed to GitHub
 *.zip
 _backup_v1.4.1/
+
+# Maintainer helper (not for the team)
+Make_NewPC_Pack.bat
