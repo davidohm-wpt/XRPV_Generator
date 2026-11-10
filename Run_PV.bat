@@ -199,6 +199,10 @@ echo ===================================================
 echo   Starting WIPOTEC PV Certificate System
 echo ===================================================
 
+REM Stop any server left running from an earlier launch, otherwise the new version
+REM cannot start (port 8000 is already in use) and the browser keeps showing the OLD pages.
+taskkill /f /t /fi "WINDOWTITLE eq WIPOTEC PV Server*" >nul 2>&1
+timeout /t 1 /nobreak >nul
 start /min "WIPOTEC PV Server" cmd /k !PYTHON_CMD! main.py
 
 echo Waiting for the server to start...
