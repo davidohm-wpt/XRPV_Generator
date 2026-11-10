@@ -65,5 +65,12 @@
     if (d && d.version) document.getElementById('foot').textContent = 'WIPOTEC Certificate System \u00b7 v' + d.version;
   }).catch(() => {});
 </script>
+<script>
+/* Open every certificate page as a fresh address so an old cached copy is never shown */
+document.querySelectorAll('a.card').forEach(function(a){
+  var u = a.getAttribute('href');
+  if (u && u.charAt(0) === '/') a.href = u + (u.indexOf('?') < 0 ? '?' : '&') + 'v=' + Date.now();
+});
+</script>
 </body>
 </html>

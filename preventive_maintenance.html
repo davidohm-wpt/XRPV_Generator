@@ -650,5 +650,9 @@
 
   init();
 </script>
+<script>
+/* Always open Home as a fresh address so a cached old home page is never shown */
+document.querySelectorAll('a.home-card').forEach(function(a){ a.href = '/?v=' + Date.now(); });
+</script>
 </body>
 </html>
