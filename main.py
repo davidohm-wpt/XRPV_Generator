@@ -106,6 +106,7 @@ from radiation_safety import router as rs_router  # X-Ray Radiation Safety (XRSC
 from preventive_maintenance import router as pm_router  # X-Ray Preventive Maintenance (PM) form + PDF
 from cwcr import router as cwcr_router  # Checkweigher Calibration Report (CWCR) form + PDF
 from commissioning import router as cwcq_router  # CW Commissioning & Qualification (CWCQ) form + PDF
+from xray_installation import router as xriq_router  # X-Ray Installation & Qualification (XRIQ) form + PDF
 
 # --- Logging setup ---
 LOG_PATH = BASE_DIR / "pv_server.log"
@@ -123,6 +124,7 @@ app.include_router(rs_router)
 app.include_router(pm_router)
 app.include_router(cwcr_router)
 app.include_router(cwcq_router)
+app.include_router(xriq_router)
 
 
 @app.middleware("http")

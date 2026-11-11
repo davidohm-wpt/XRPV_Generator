@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>X-Ray Installation &amp; Qualification Form</title>
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+    .container { max-width: 1100px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .form-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #008080; padding-bottom: 10px; margin-bottom: 20px; }
+    .form-header h2 { color: #008080; margin: 0; }
+    .form-header img { height: 34px; width: auto; }
+    h3 { color: #008080; border-bottom: 2px solid #008080; padding-bottom: 5px; margin-top: 28px; }
+    h4 { color: #008080; margin: 0 0 8px; font-size: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 12px; }
+    .grid-4 > *, .grid-3 > *, .grid-2 > * { min-width: 0; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; }
+    label { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #555; }
+    label .required-mark { color: #dc3545; margin-left: 2px; }
+    input, select, textarea { padding: 7px 10px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+    input.input-error, select.input-error { border-color: #dc3545; background-color: #fff5f5; }
+    .card-box { border: 1px solid #d0d0d0; padding: 15px; border-radius: 6px; background: #fff; margin-bottom: 15px; }
+    .card-box.sub { background: #fafdfd; border-color: #d5e3e3; }
+    .intro { font-size: 12px; color: #666; margin: -4px 0 10px; }
+    .btn-add { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-add-sm { background: #17a2b8; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+    .btn-remove { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; float: right; }
+    .btn-upload-sig { background: #6c757d; }
+    .btn-all { background:#e0f2f2; color:#008080; border:1px solid #008080; padding:2px 8px; border-radius:3px; font-size:10px; font-weight:bold; cursor:pointer; float:right; margin-left: 6px; }
+    .btn-all:hover { background:#008080; color:#fff; }
+
+    .cq-table { width: 100%; border-collapse: collapse; font-size: 12px; clear: both; }
+    .cq-table th { background: #e0f2f2; color: #008080; text-align: left; padding: 6px 8px; border: 1px solid #cfe3e3; font-size: 11px; }
+    .cq-table td { padding: 5px 8px; border: 1px solid #e3eaea; vertical-align: middle; }
+    .cq-table select, .cq-table input { width: 100%; font-size: 12px; padding: 4px 6px; box-sizing: border-box; }
+    .cq-table td.sel { width: 105px; }
+    .cq-table td.rmk { width: 28%; }
+    select.r-pass { color: #1e7e34; font-weight: bold; }
+    select.r-failed { color: #b02a37; font-weight: bold; background: #fff5f5; }
+    .item-title { font-weight: bold; color: #008080; font-size: 12px; margin-bottom: 8px; }
+
+    .chk { display: inline-block; font-weight: bold; font-size: 12px; padding: 6px 10px; border-radius: 4px; background: #f4f4f4; color: #777; }
+    .chk.ok { background: #eaf6ed; color: #1e7e34; }
+    .chk.bad { background: #fdecea; color: #b02a37; }
+
+    .photo-item { border:1px solid #d0d0d0; border-radius:6px; padding:8px; margin-bottom:10px; display:flex; gap:10px; align-items:flex-start; }
+    .photo-item img { width:140px; height:100px; object-fit:cover; border-radius:4px; border:1px solid #ccc; }
+    .photo-item textarea { flex:1; }
+    .signature-canvas { border: 1px dashed #999; border-radius: 4px; touch-action: none; background: #fff; max-width: 100%; display: block; margin: 0 auto; cursor: crosshair; }
+
+    #form-message { display: none; margin-top: 16px; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; }
+    #form-message.error { display: block; background: #fdecea; color: #b02a37; border: 1px solid #f5c2c7; }
+    #form-message.info { display: block; background: #e7f5f5; color: #006666; border: 1px solid #b3dede; }
+    button.btn-submit { background: #008080; color: white; padding: 14px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 25px; box-shadow: 0 3px 6px rgba(0,0,0,0.15); }
+    button.btn-submit:hover { background: #006666; }
+    button.btn-submit:disabled { background: #9bbcbc; cursor: not-allowed; box-shadow: none; }
+
+    .hdr-left { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+    .home-card { display:inline-flex; align-items:center; gap:12px; padding:10px 22px 10px 14px; background:#fff; border:2px solid #008080; border-radius:12px; color:#008080; text-decoration:none; box-shadow:0 2px 8px rgba(0,128,128,.18); transition:background .15s, color .15s, transform .15s, box-shadow .15s; }
+    .home-card svg { width:30px; height:30px; flex:none; }
+    .home-card span { display:flex; flex-direction:column; line-height:1.15; }
+    .home-card b { font-size:18px; font-weight:700; }
+    .home-card small { font-size:11px; font-weight:600; opacity:.75; }
+    .home-card:hover { background:#008080; color:#fff; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,128,128,.32); }
+    @media (max-width: 800px) { .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="form-header">
+    <div class="hdr-left"><a class="home-card" href="/" title="Back to the home menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h4.5v-5.5h4v5.5h4.5V10"/></svg><span><b>Home</b><small>Back to menu</small></span></a><h2>X-Ray Installation &amp; Qualification</h2></div>
+    <img src="/cwcq-logo" alt="WIPOTEC" onerror="this.style.display='none'">
+  </div>
+
+  <!-- ===================== COVER ===================== -->
+  <h3>Cover Page</h3>
+  <div class="card-box">
+    <div class="grid-3">
+      <div class="form-group"><label for="doc_no">Document No.<span class="required-mark">*</span></label><input id="doc_no" placeholder="e.g. TH261111_001_XRIQ"></div>
+      <div class="form-group"><label for="model">Model<span class="required-mark">*</span></label><input id="model" placeholder="e.g. SC-S5020"></div>
+      <div class="form-group"><label for="serial_no">Serial Number<span class="required-mark">*</span></label><input id="serial_no"></div>
+    </div>
+    <div class="grid-2" style="margin-bottom:0;">
+      <div class="form-group"><label for="asset_number">Asset Number</label><input id="asset_number"></div>
+      <div class="form-group"><label for="system_name">System Name</label><input id="system_name"></div>
+    </div>
+  </div>
+
+  <!-- ===================== 2. CUSTOMER ===================== -->
+  <h3>2. Customer Details</h3>
+  <div class="card-box">
+    <div class="grid-4">
+      <div class="form-group"><label for="cu_customer_id">Customer ID</label><input id="cu_customer_id"></div>
+      <div class="form-group" style="grid-column: span 3;"><label for="cu_name">Customer Name<span class="required-mark">*</span></label><input id="cu_name"></div>
+    </div>
+    <div class="grid-2"><div class="form-group"><label for="cu_address1">Address 1</label><input id="cu_address1"></div><div class="form-group"><label for="cu_address2">Address 2</label><input id="cu_address2"></div></div>
+    <div class="grid-4">
+      <div class="form-group"><label for="cu_city">Town / City</label><input id="cu_city"></div>
+      <div class="form-group"><label for="cu_province">State / Province</label><input id="cu_province"></div>
+      <div class="form-group"><label for="cu_zip">Zip / Postal Code</label><input id="cu_zip"></div>
+      <div class="form-group"><label for="cu_country">Country</label><input id="cu_country"></div>
+    </div>
+    <div class="grid-4">
+      <div class="form-group"><label for="cu_contact">Site Contact Name</label><input id="cu_contact"></div>
+      <div class="form-group"><label for="cu_phone">Telephone</label><input id="cu_phone"></div>
+      <div class="form-group"><label for="cu_email1">Email Address 1</label><input id="cu_email1"></div>
+      <div class="form-group"><label for="cu_email2">Email Address 2</label><input id="cu_email2"></div>
+    </div>
+    <div class="grid-2" style="margin-bottom:0;"><div class="form-group"><label for="cu_wipotec_order">WIPOTEC Order Number</label><input id="cu_wipotec_order"></div><div class="form-group"><label for="cu_customer_po">Customer Purchase Order Number</label><input id="cu_customer_po"></div></div>
+  </div>
+
+  <!-- ===================== 3. SYSTEM ===================== -->
+  <h3>3. System Information</h3>
+  <div class="card-box">
+    <h4>3.1 Machine Details <span style="font-weight:normal;font-size:11px;color:#888;">— design specification of the machine, not measured readings</span></h4>
+    <div class="grid-4">
+      <div class="form-group"><label for="m_voltage">Machine Voltage (V)</label><input id="m_voltage"></div>
+      <div class="form-group"><label for="m_current">Machine Current (A)</label><input id="m_current"></div>
+      <div class="form-group"><label for="m_frequency">Frequency (Hz)</label><input id="m_frequency"></div>
+      <div class="form-group"><label for="m_air_pressure">Air Pressure (bar)</label><input id="m_air_pressure"></div>
+    </div>
+    <div class="grid-3">
+      <div class="form-group"><label for="m_date_of_manufacture">Date of Manufacture</label><input type="date" id="m_date_of_manufacture"></div>
+      <div class="form-group"><label for="m_software_type">Software Type</label><input id="m_software_type"></div>
+      <div class="form-group"><label for="m_software_version">Software Version</label><input id="m_software_version"></div>
+    </div>
+    <div class="grid-2" style="margin-bottom:0;"><div class="form-group"><label for="m_pc_part">PC Part Number</label><input id="m_pc_part"></div><div class="form-group"><label for="m_pc_serial">PC Serial Number</label><input id="m_pc_serial"></div></div>
+  </div>
+  <div id="components_container"></div>
+  <div class="grid-2">
+    <div class="card-box" id="yn_accessories"></div>
+    <div class="card-box"><div id="yn_documentation"></div>
+      <div class="grid-2" style="margin:10px 0 0;"><div class="form-group"><label for="operator_manual_language">Operator Manual Language</label><input id="operator_manual_language" value="English"></div><div class="form-group"><label for="technical_manual_language">Technical Manual Language</label><input id="technical_manual_language" value="English"></div></div>
+    </div>
+  </div>
+
+  <!-- ===================== 4. INSTALLATION ===================== -->
+  <h3>4. Installation Checks</h3>
+  <div class="card-box">
+    <div class="form-group" style="max-width:360px;"><label for="qualification_purpose">4.1 Purpose of Qualification</label><select id="qualification_purpose"></select></div>
+  </div>
+  <div id="install_container"></div>
+
+  <!-- ===================== 5. OPERATION ===================== -->
+  <h3>5. Operation Checks</h3>
+  <div id="op_51"></div>
+  <div class="card-box">
+    <h4>5.2 Safety Circuit</h4>
+    <div class="intro">Add every emergency stop, interlock and X-ray on lamp fitted to the machine (as per the machine documentation) and run the tests for each one.</div>
+    <div id="safety_container"></div>
+    <div class="form-group" style="max-width:360px;margin-top:10px;"><label for="global_estops">Global emergency stop buttons connected</label><input type="number" min="0" id="global_estops"></div>
+    <h4 style="margin-top:16px;">Screenshots — Detector Install Settings, Diagnostics, X-ray, I/O</h4>
+    <button type="button" class="btn-add-sm btn-upload-sig" onclick="$('screen_input').click()">+ Add Screenshots</button>
+    <input type="file" id="screen_input" accept="image/*" multiple style="display:none;" onchange="addPhotos(event, 'screen')">
+    <span style="font-size:11px;color:#888;margin-left:8px;">Optional. Images are resized automatically.</span>
+    <div id="screen_photos" style="margin-top:10px;"></div>
+  </div>
+  <div id="op_53"></div>
+  <div class="card-box">
+    <h4>5.4 Radiation Safety and Performance Verification</h4>
+    <div class="grid-3" style="margin-bottom:0;">
+      <div class="form-group"><label for="safety_inspection">Radiation safety inspection passed?</label><select id="safety_inspection"></select></div>
+      <div class="form-group"><label for="xrsc_cert_no">Radiation Safety (XRSC) Certificate No.</label><input id="xrsc_cert_no"></div>
+      <div class="form-group"><label for="xrpv_cert_no">Performance Verification (XRPV) Certificate No.</label><input id="xrpv_cert_no"></div>
+    </div>
+  </div>
+  <div class="card-box">
+    <h4>5.5 Product Set-Up</h4>
+    <div class="intro">Set up each agreed product per the relevant SOP and run it for at least 4 hours and 1000 products. The expected FRR is below 0.05 %.</div>
+    <div id="products_container"></div>
+    <button type="button" class="btn-add" onclick="addProduct()">+ Add Product</button>
+  </div>
+  <div id="op_56"></div>
+
+  <!-- ===================== 6. TRAINING ===================== -->
+  <h3>6. Training</h3>
+  <div class="card-box">
+    <div id="yn_training"></div>
+    <h4 style="margin-top:14px;">Trained Personnel</h4>
+    <table class="cq-table" id="trainees_table"></table>
+    <button type="button" class="btn-add" style="margin-top:8px;" onclick="addTrainee()">+ Add Person</button>
+  </div>
+
+  <!-- ===================== 7. SIGN-OFF ===================== -->
+  <h3>7. Completion and Sign-off</h3>
+  <div class="form-group" style="margin-bottom:15px;"><label for="remarks">Remarks</label><textarea id="remarks" rows="3"></textarea></div>
+  <div class="grid-2">
+    <div class="card-box">
+      <h4>WIPOTEC Representative</h4>
+      <canvas id="tech_signature_pad" width="460" height="150" class="signature-canvas"></canvas>
+      <div style="margin:8px 0; display:flex; gap:8px; justify-content:center;">
+        <button type="button" class="btn-add-sm" onclick="techSigPad.clear()">Clear</button>
+        <button type="button" class="btn-add-sm btn-upload-sig" onclick="$('tech_signature_upload').click()">Upload Image</button>
+        <input type="file" id="tech_signature_upload" accept="image/*" style="display:none;" onchange="techSigPad.handleUpload(event)">
+      </div>
+      <div class="grid-3" style="margin-bottom:0;"><div class="form-group"><label for="tech_name">Name<span class="required-mark">*</span></label><input id="tech_name"></div><div class="form-group"><label for="tech_function">Function</label><input id="tech_function" value="Service Technician"></div><div class="form-group"><label for="tech_date">Date</label><input type="date" id="tech_date"></div></div>
+    </div>
+    <div class="card-box">
+      <h4>Customer Review and Approval</h4>
+      <canvas id="cust_signature_pad" width="460" height="150" class="signature-canvas"></canvas>
+      <div style="margin:8px 0; display:flex; gap:8px; justify-content:center;">
+        <button type="button" class="btn-add-sm" onclick="custSigPad.clear()">Clear</button>
+        <button type="button" class="btn-add-sm btn-upload-sig" onclick="$('cust_signature_upload').click()">Upload Image</button>
+        <input type="file" id="cust_signature_upload" accept="image/*" style="display:none;" onchange="custSigPad.handleUpload(event)">
+      </div>
+      <div class="grid-3" style="margin-bottom:0;"><div class="form-group"><label for="cust_name">Name</label><input id="cust_name"></div><div class="form-group"><label for="cust_function">Function</label><input id="cust_function"></div><div class="form-group"><label for="cust_date">Date</label><input type="date" id="cust_date"></div></div>
+    </div>
+  </div>
+
+  <div id="form-message"></div>
+  <button class="btn-submit" id="submit_btn" onclick="submitForm()">Generate X-Ray Installation &amp; Qualification Report</button>
+  <div style="text-align:center; font-size:10px; color:#aaa; margin-top:14px;">WIPOTEC X-Ray Installation &amp; Qualification</div>
+</div>
+
+<script>
+  const API_BASE_URL = '';  // same server that served this page
+  let CFG = null;
+  const photos = { location: [], screen: [] };
+
+  const $ = id => document.getElementById(id);
+  function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function opts(list, selected) { return list.map(v => `<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(v)}</option>`).join(''); }
+  function colorResult(sel) {
+    sel.classList.toggle('r-pass', sel.value === 'Pass' || sel.value === 'Yes');
+    sel.classList.toggle('r-failed', sel.value === 'Failed' || sel.value === 'No');
+  }
+  // First click sets every select inside the box to `value`, second click resets to "-"
+  function setAll(box, btn, value) {
+    const sels = box.querySelectorAll('select.res');
+    const all = Array.from(sels).every(s => s.value === value);
+    sels.forEach(s => { s.value = all ? '-' : value; colorResult(s); });
+    btn.textContent = all ? (value === 'Yes' ? 'Yes All' : 'Pass All') : 'Reset';
+  }
+  function renumber(container, label) {
+    $(container).querySelectorAll(':scope > .rep-item').forEach((el, i) => { el.querySelector('.item-title').textContent = `${label} ${i + 1}`; });
+  }
+
+  // ---------- Pass/Failed/N/A checklists ----------
+  function checklistBox(sec, before = '', after = '') {
+    const rows = sec.items.map(it => `<tr data-sec="${esc(sec.id)}" data-name="${esc(it)}"><td>${esc(it)}</td>
+      <td class="sel"><select class="res" onchange="colorResult(this)">${opts(CFG.results)}</select></td>
+      <td class="rmk"><input type="text" class="rmk"></td></tr>`).join('');
+    return `<div class="card-box"><button type="button" class="btn-all" onclick="setAll(this.parentElement, this, 'Pass')">Pass All</button>
+      <h4>${esc(sec.title)}</h4>${before}<table class="cq-table"><tr><th>Check</th><th>Result</th><th>Remark</th></tr>${rows}</table>${after}</div>`;
+  }
+  // ---------- Yes/No lists ----------
+  function yesnoBox(group) {
+    return `<button type="button" class="btn-all" onclick="setAll(this.parentElement, this, 'Yes')">Yes All</button><h4>${esc(group.title)}</h4>
+      <table class="cq-table">${group.items.map(it => `<tr data-yn="${esc(group.id)}" data-name="${esc(it)}"><td>${esc(it)}</td>
+      <td class="sel"><select class="res" onchange="colorResult(this)">${opts(CFG.yesno)}</select></td></tr>`).join('')}</table>`;
+  }
+
+  // ---------- Repeatable components (detectors, generators, curtains, belts, test samples) ----------
+  function renderComponents() {
+    $('components_container').innerHTML = CFG.components.map(c => `<div class="card-box"><h4>${esc(c.title)}</h4>
+      <div id="comp_${c.key}"></div><button type="button" class="btn-add" onclick="addComponent('${c.key}')">+ Add ${esc(c.item)}</button></div>`).join('');
+    CFG.components.forEach(c => addComponent(c.key));
+  }
+  function addComponent(key) {
+    const c = CFG.components.find(x => x.key === key);
+    const box = document.createElement('div');
+    box.className = 'card-box sub rep-item';
+    box.innerHTML = `<button type="button" class="btn-remove" onclick="this.parentElement.remove(); renumber('comp_${key}', '${esc(c.item)}')">Remove</button>
+      <div class="item-title"></div>
+      <div class="grid-${c.fields.length > 4 ? 3 : c.fields.length}" style="margin-bottom:0;">${c.fields.map(f => `<div class="form-group"><label>${esc(f.label)}</label><input data-k="${f.key}"></div>`).join('')}</div>`;
+    $('comp_' + key).appendChild(box);
+    renumber('comp_' + key, c.item);
+  }
+
+  // ---------- Safety circuit devices ----------
+  function renderSafety() {
+    $('safety_container').innerHTML = CFG.safety_devices.map(dv => `<div class="card-box sub" style="background:#fff;">
+      <h4>${esc(dv.title)}</h4><div id="safety_${dv.id}"></div>
+      <button type="button" class="btn-add" onclick="addSafety('${dv.id}')">+ Add ${esc(dv.item)}</button></div>`).join('');
+    CFG.safety_devices.forEach(dv => addSafety(dv.id));
+  }
+  function addSafety(id) {
+    const dv = CFG.safety_devices.find(x => x.id === id);
+    const box = document.createElement('div');
+    box.className = 'card-box sub rep-item';
+    box.innerHTML = `<button type="button" class="btn-remove" onclick="this.parentElement.remove(); renumber('safety_${id}', '${esc(dv.item)}')">Remove</button>
+      <button type="button" class="btn-all" onclick="setAll(this.parentElement, this, 'Pass')">Pass All</button>
+      <div class="item-title"></div>
+      <div class="form-group" style="max-width:320px;margin-bottom:8px;"><label>Location</label><input data-k="location" placeholder="e.g. Front, Front Door, Top"></div>
+      <table class="cq-table">${dv.tests.map(t => `<tr><td>${esc(t)}</td><td class="sel"><select class="res" onchange="colorResult(this)">${opts(CFG.results)}</select></td></tr>`).join('')}</table>
+      <div class="form-group" style="margin-top:8px;"><label>Remark</label><input data-k="remark"></div>`;
+    $('safety_' + id).appendChild(box);
+    renumber('safety_' + id, dv.item);
+  }
+
+  // ---------- Live checks ----------
+  function mainsCheck() {
+    const v = parseFloat($('mains_voltage').value), out = $('mains_check');
+    out.className = 'chk';
+    if (isNaN(v)) { out.textContent = '—'; return; }
+    const r = CFG.mains_ranges.find(([lo, hi]) => v >= lo && v <= hi);
+    out.textContent = r ? `Within range (${r[2]})` : 'Outside the supported ranges';
+    out.classList.add(r ? 'ok' : 'bad');
+  }
+  function frrCheck(inp) {
+    const out = inp.closest('.rep-item').querySelector('.frr-chk'), v = parseFloat(inp.value);
+    out.className = 'chk frr-chk';
+    if (isNaN(v)) { out.textContent = '—'; return; }
+    const ok = v < CFG.frr_limit;
+    out.textContent = ok ? 'PASS (< 0.05 %)' : 'FAIL (≥ 0.05 %)';
+    out.classList.add(ok ? 'ok' : 'bad');
+  }
+
+  // ---------- Products ----------
+  function addProduct() {
+    const box = document.createElement('div');
+    box.className = 'card-box sub rep-item';
+    box.innerHTML = `<button type="button" class="btn-remove" onclick="this.parentElement.remove(); renumber('products_container', 'Product')">Remove</button>
+      <div class="item-title"></div>
+      <div class="grid-3">${CFG.product_fields.map(f => f.key === 'frr'
+        ? `<div class="form-group"><label>${esc(f.label)}</label><div style="display:flex;gap:8px;align-items:center;"><input type="number" step="any" min="0" data-k="frr" oninput="frrCheck(this)" style="flex:1;"><span class="chk frr-chk">—</span></div></div>`
+        : `<div class="form-group"><label>${esc(f.label)}</label><input data-k="${f.key}"></div>`).join('')}</div>`;
+    $('products_container').appendChild(box);
+    renumber('products_container', 'Product');
+  }
+
+  // ---------- Trainees ----------
+  function addTrainee() {
+    const tb = $('trainees_table');
+    if (!tb.rows.length) tb.innerHTML = '<tr><th>First Name</th><th>Family Name</th><th>Position</th><th>Date</th><th></th></tr>';
+    const tr = tb.insertRow();
+    tr.className = 'trainee';
+    tr.innerHTML = `<td><input data-k="first"></td><td><input data-k="family"></td><td><input data-k="position"></td><td><input type="date" data-k="date"></td>
+      <td style="width:30px;"><button type="button" class="btn-remove" style="float:none;" onclick="this.closest('tr').remove()">✕</button></td>`;
+  }
+
+  // ---------- Photos (shrunk to max 1000 px JPEG so the upload stays small) ----------
+  function addPhotos(evt, kind) {
+    Array.from(evt.target.files).forEach(file => {
+      const rd = new FileReader();
+      rd.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const s = Math.min(1, 1000 / Math.max(img.width, img.height));
+          const cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          photos[kind].push({ image: cv.toDataURL('image/jpeg', 0.82), comment: '' });
+          renderPhotos(kind);
+        };
+        img.src = e.target.result;
+      };
+      rd.readAsDataURL(file);
+    });
+    evt.target.value = '';
+  }
+  function renderPhotos(kind) {
+    $(kind + '_photos').innerHTML = photos[kind].map((p, i) => `<div class="photo-item"><img src="${p.image}">
+      <textarea rows="3" placeholder="Caption for image ${i + 1}" oninput="photos['${kind}'][${i}].comment = this.value">${esc(p.comment)}</textarea>
+      <button type="button" class="btn-remove" onclick="photos['${kind}'].splice(${i},1); renderPhotos('${kind}');">Remove</button></div>`).join('');
+  }
+
+  // ---------- Signature pads (same behaviour as the other forms) ----------
+  function createSignaturePad(canvasId, uploadInputId) {
+    const canvas = $(canvasId), ctx = canvas.getContext('2d');
+    let drawing = false, has = false, uploaded = null;
+    const bg = () => { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); };
+    bg();
+    const pos = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; };
+    canvas.addEventListener('pointerdown', e => { e.preventDefault(); drawing = true; uploaded = null; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+    canvas.addEventListener('pointermove', e => { if (!drawing) return; e.preventDefault(); const p = pos(e); ctx.lineTo(p.x, p.y); ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke(); has = true; });
+    window.addEventListener('pointerup', () => { drawing = false; });
+    canvas.addEventListener('pointerleave', () => { drawing = false; });
+    return {
+      clear() { bg(); has = false; uploaded = null; const u = $(uploadInputId); if (u) u.value = ''; },
+      handleUpload(evt) {
+        const f = evt.target.files[0]; if (!f) return;
+        const rd = new FileReader();
+        rd.onload = e => {
+          uploaded = e.target.result;
+          const img = new Image();
+          img.onload = () => { bg(); const s = Math.min(canvas.width / img.width, canvas.height / img.height, 1); const w = img.width * s, h = img.height * s; ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h); };
+          img.src = uploaded; has = true;
+        };
+        rd.readAsDataURL(f);
+      },
+      getDataUrl() { return !has ? '' : (uploaded || canvas.toDataURL('image/png')); }
+    };
+  }
+  const techSigPad = createSignaturePad('tech_signature_pad', 'tech_signature_upload');
+  const custSigPad = createSignaturePad('cust_signature_pad', 'cust_signature_upload');
+
+  // ---------- Init ----------
+  async function init() {
+    try {
+      CFG = await (await fetch(`${API_BASE_URL}/xriq-config`)).json();
+    } catch (e) {
+      showMessage('Could not load the form checklist from the server. Please restart the program (Run_PV.bat) and refresh this page.', 'error');
+      return;
+    }
+    const grp = id => CFG.yesno_groups.find(g => g.id === id);
+    const sec = id => CFG.check_sections.find(s => s.id === id);
+    renderComponents();
+    $('yn_accessories').innerHTML = yesnoBox(grp('accessories'));
+    $('yn_documentation').innerHTML = yesnoBox(grp('documentation'));
+    $('yn_training').innerHTML = yesnoBox(grp('training'));
+    $('qualification_purpose').innerHTML = opts(CFG.qualification_purposes);
+    $('safety_inspection').innerHTML = opts(CFG.yesno);
+
+    $('install_container').innerHTML =
+      checklistBox(sec('4.2')) + checklistBox(sec('4.3')) +
+      checklistBox(sec('4.4'), `<div class="grid-3" style="align-items:end;"><div class="form-group"><label for="mains_voltage">Actual Mains Voltage Supplied (V)</label><input type="number" step="any" id="mains_voltage" oninput="mainsCheck()"></div>
+        <div style="grid-column: span 2;"><span class="chk" id="mains_check">—</span><div style="font-size:11px;color:#888;margin-top:4px;">Must fall within 208 – 250 V AC / 50-60 Hz / 6 A max, or 110 – 120 V AC / 50-60 Hz / 10 A max.</div></div></div>`) +
+      checklistBox(sec('4.5'), `<div class="grid-3"><div class="form-group"><label for="ambient_temp">Ambient Temperature (°C)</label><input type="number" step="any" id="ambient_temp"></div>
+        <div class="form-group"><label for="humidity">Relative Humidity (%)</label><input type="number" step="any" id="humidity"></div></div>`,
+        `<h4 style="margin-top:14px;">Machine Location Photos</h4>
+        <button type="button" class="btn-add-sm btn-upload-sig" onclick="$('location_input').click()">+ Add Photos</button>
+        <input type="file" id="location_input" accept="image/*" multiple style="display:none;" onchange="addPhotos(event, 'location')">
+        <span style="font-size:11px;color:#888;margin-left:8px;">Optional. Photos are resized automatically.</span><div id="location_photos" style="margin-top:10px;"></div>`);
+    $('op_51').innerHTML = checklistBox(sec('5.1'));
+    $('op_53').innerHTML = checklistBox(sec('5.3'), '', `<div class="grid-4" style="margin:12px 0 0;">
+      <div class="form-group"><label for="connectivity">Connectivity Option</label><select id="connectivity">${opts(CFG.connectivity)}</select></div>
+      <div class="form-group"><label for="connectivity_detail">Details</label><input id="connectivity_detail"></div>
+      <div class="form-group"><label for="ip_address">IP Address</label><input id="ip_address"></div>
+      <div class="form-group"><label for="subnet_mask">Subnet Mask</label><input id="subnet_mask"></div></div>
+      <div class="form-group" style="max-width:260px;"><label for="gateway">Gateway Address</label><input id="gateway"></div>`);
+    $('op_56').innerHTML = checklistBox(sec('5.6'));
+    renderSafety();
+    addProduct();
+    addTrainee();
+  }
+
+  // ---------- Submit ----------
+  function dmy(v) { if (!v) return ''; const [y, m, d] = v.split('-'); return d ? `${d}.${m}.${y}` : v; }
+  function showMessage(text, type = 'error') { const b = $('form-message'); b.textContent = text; b.className = type; }
+  function clearMessage() { const b = $('form-message'); b.textContent = ''; b.className = ''; }
+  function validate() {
+    const req = [['doc_no', 'Document No.'], ['model', 'Model'], ['serial_no', 'Serial Number'], ['cu_name', 'Customer Name'], ['tech_name', 'WIPOTEC Representative Name']];
+    const missing = [];
+    req.forEach(([id, label]) => { const el = $(id); el.classList.remove('input-error'); if (!el.value.trim()) { el.classList.add('input-error'); missing.push(label); } });
+    return missing;
+  }
+  const collect = (container, extra) => Array.from($(container).querySelectorAll(':scope > .rep-item')).map(box => {
+    const o = {}; box.querySelectorAll('[data-k]').forEach(el => { o[el.dataset.k] = el.value; }); if (extra) Object.assign(o, extra(box)); return o;
+  });
+
+  async function submitForm() {
+    clearMessage();
+    if (!CFG) { showMessage('The checklist has not loaded. Please refresh the page.', 'error'); return; }
+    const missing = validate();
+    if (missing.length) {
+      showMessage(`Please fill in the required fields before generating the PDF: ${missing.join(', ')}`, 'error');
+      const first = document.querySelector('.input-error'); if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const v = id => $(id).value;
+    const checks = {}, yesno = {};
+    document.querySelectorAll('tr[data-sec]').forEach(tr => {
+      (checks[tr.dataset.sec] = checks[tr.dataset.sec] || {})[tr.dataset.name] = { result: tr.querySelector('.res').value, remark: tr.querySelector('input.rmk').value };
+    });
+    document.querySelectorAll('tr[data-yn]').forEach(tr => { (yesno[tr.dataset.yn] = yesno[tr.dataset.yn] || {})[tr.dataset.name] = tr.querySelector('.res').value; });
+    const customer = {};
+    ['customer_id', 'name', 'address1', 'address2', 'city', 'province', 'zip', 'country', 'contact', 'phone', 'email1', 'email2', 'wipotec_order', 'customer_po'].forEach(k => { customer[k] = v('cu_' + k); });
+    const machine = {};
+    ['voltage', 'current', 'frequency', 'air_pressure', 'software_type', 'software_version', 'pc_part', 'pc_serial'].forEach(k => { machine[k] = v('m_' + k); });
+    machine.date_of_manufacture = dmy(v('m_date_of_manufacture'));
+    const components = {};
+    CFG.components.forEach(c => { components[c.key] = collect('comp_' + c.key); });
+    const safety = {};
+    CFG.safety_devices.forEach(dv => { safety[dv.id] = collect('safety_' + dv.id, box => ({ results: Array.from(box.querySelectorAll('select.res')).map(s => s.value) })); });
+
+    const payload = {
+      doc_no: v('doc_no'), model: v('model'), serial_no: v('serial_no'), asset_number: v('asset_number'), system_name: v('system_name'),
+      customer, machine, components, yesno,
+      operator_manual_language: v('operator_manual_language'), technical_manual_language: v('technical_manual_language'),
+      qualification_purpose: v('qualification_purpose'), checks,
+      mains_voltage: v('mains_voltage'), ambient_temp: v('ambient_temp'), humidity: v('humidity'),
+      location_photos: photos.location, safety, global_estops: v('global_estops'), screen_photos: photos.screen,
+      connectivity: v('connectivity'), connectivity_detail: v('connectivity_detail'), ip_address: v('ip_address'), subnet_mask: v('subnet_mask'), gateway: v('gateway'),
+      safety_inspection: v('safety_inspection'), xrsc_cert_no: v('xrsc_cert_no'), xrpv_cert_no: v('xrpv_cert_no'),
+      products: collect('products_container'),
+      trainees: Array.from(document.querySelectorAll('#trainees_table tr.trainee')).map(tr => {
+        const o = {}; tr.querySelectorAll('[data-k]').forEach(el => { o[el.dataset.k] = el.dataset.k === 'date' ? dmy(el.value) : el.value; }); return o;
+      }),
+      remarks: v('remarks'),
+      tech_name: v('tech_name'), tech_function: v('tech_function'), tech_date: dmy(v('tech_date')), tech_signature: techSigPad.getDataUrl(),
+      cust_name: v('cust_name'), cust_function: v('cust_function'), cust_date: dmy(v('cust_date')), cust_signature: custSigPad.getDataUrl()
+    };
+
+    const btn = $('submit_btn'), label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Generating PDF...';
+    try {
+      const response = await fetch(`${API_BASE_URL}/generate-xriq-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!response.ok) {
+        let detail = `Server returned status ${response.status}`;
+        try { const j = await response.json(); detail = j.detail ? JSON.stringify(j.detail) : detail; } catch (e) {}
+        showMessage(`Failed to generate PDF: ${detail}`, 'error');
+        return;
+      }
+      const blob = await response.blob(), url = URL.createObjectURL(blob), a = document.createElement('a');
+      const safe = String(payload.doc_no || '').trim().replace(/[\\/:*?"<>|\r\n\t]+/g, '-').replace(/\s+/g, '_').replace(/^[-_.]+|[-_.]+$/g, '') || 'Document';
+      a.href = url; a.download = `XRIQ_Report_${safe}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+      showMessage('PDF generated successfully', 'info');
+    } catch (err) {
+      showMessage(`Could not connect to the server: ${err.message}`, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = label;
+    }
+  }
+
+  init();
+</script>
+<script>
+/* Always open Home as a fresh address so a cached old home page is never shown */
+document.querySelectorAll('a.home-card').forEach(function(a){ a.href = '/?v=' + Date.now(); });
+</script>
+</body>
+</html>
