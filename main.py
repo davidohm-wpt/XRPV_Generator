@@ -105,6 +105,7 @@ from assets import LOGO_HEADER_URI, BASE_CSS, safe_filename_part, content_dispos
 from radiation_safety import router as rs_router  # X-Ray Radiation Safety (XRSC) form + PDF
 from preventive_maintenance import router as pm_router  # X-Ray Preventive Maintenance (PM) form + PDF
 from cwcr import router as cwcr_router  # Checkweigher Calibration Report (CWCR) form + PDF
+from commissioning import router as cwcq_router  # CW Commissioning & Qualification (CWCQ) form + PDF
 
 # --- Logging setup ---
 LOG_PATH = BASE_DIR / "pv_server.log"
@@ -121,6 +122,7 @@ app = FastAPI()
 app.include_router(rs_router)
 app.include_router(pm_router)
 app.include_router(cwcr_router)
+app.include_router(cwcq_router)
 
 
 @app.middleware("http")

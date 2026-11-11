@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CW Commissioning &amp; Qualification Form</title>
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+    .container { max-width: 1100px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .form-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #008080; padding-bottom: 10px; margin-bottom: 20px; }
+    .form-header h2 { color: #008080; margin: 0; }
+    .form-header img { height: 34px; width: auto; }
+    h3 { color: #008080; border-bottom: 2px solid #008080; padding-bottom: 5px; margin-top: 28px; }
+    h4 { color: #008080; margin: 14px 0 8px; font-size: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 12px; }
+    .grid-4 > *, .grid-3 > *, .grid-2 > *, .lane-grid > *, .model-wrap > * { min-width: 0; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group input, .form-group select, .form-group textarea, .lane-grid input { width: 100%; }
+    label { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #555; }
+    label .required-mark { color: #dc3545; margin-left: 2px; }
+    input, select, textarea { padding: 7px 10px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+    input.input-error, select.input-error { border-color: #dc3545; background-color: #fff5f5; }
+    .card-box { border: 1px solid #d0d0d0; padding: 15px; border-radius: 6px; background: #fff; margin-bottom: 15px; }
+    .card-box.sub { background: #fafdfd; border-color: #d5e3e3; }
+    .btn-add { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-add-sm { background: #17a2b8; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+    .btn-remove { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; float: right; }
+    .btn-upload-sig { background: #6c757d; }
+    .btn-all { background:#e0f2f2; color:#008080; border:1px solid #008080; padding:2px 8px; border-radius:3px; font-size:10px; font-weight:bold; cursor:pointer; float:right; }
+    .btn-all:hover { background:#008080; color:#fff; }
+    .btn-link { background: none; border: none; color: #008080; font-size: 11px; font-weight: bold; cursor: pointer; padding: 0; text-decoration: underline; }
+
+    .cq-table { width: 100%; border-collapse: collapse; font-size: 12px; clear: both; }
+    .cq-table th { background: #e0f2f2; color: #008080; text-align: left; padding: 6px 8px; border: 1px solid #cfe3e3; font-size: 11px; }
+    .cq-table td { padding: 5px 8px; border: 1px solid #e3eaea; vertical-align: middle; }
+    .cq-table select, .cq-table input { width: 100%; font-size: 12px; padding: 4px 6px; }
+    .cq-table td.sel { width: 105px; }
+    .cq-table td.rmk { width: 30%; }
+    .hint { display: block; font-size: 10.5px; color: #8a9a9a; margin-top: 2px; font-style: italic; }
+    select.r-pass { color: #1e7e34; font-weight: bold; }
+    select.r-failed { color: #b02a37; font-weight: bold; background: #fff5f5; }
+
+    .model-wrap { display: grid; grid-template-columns: 1fr 220px; gap: 18px; align-items: start; }
+    .model-preview { border: 1px solid #d5e3e3; border-radius: 6px; background: #fff; height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .model-preview img { max-width: 100%; max-height: 196px; }
+    .model-preview span { font-size: 11px; color: #aaa; }
+
+    .dev { font-weight: bold; font-size: 12px; padding: 7px 10px; border-radius: 4px; background: #f4f4f4; color: #777; text-align: center; }
+    .dev.ok { background: #eaf6ed; color: #1e7e34; }
+    .dev.bad { background: #fdecea; color: #b02a37; }
+    .lane-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 130px; gap: 10px; align-items: end; margin-bottom: 8px; }
+    .lane-grid .hdr { font-size: 11px; font-weight: bold; color: #008080; }
+
+    .signature-canvas { border: 1px dashed #999; border-radius: 4px; touch-action: none; background: #fff; max-width: 100%; display: block; margin: 0 auto; cursor: crosshair; }
+    .tk-due-soon { border-color: #e0a800 !important; background: #fff8e1; }
+    .tk-overdue { border-color: #dc3545 !important; background: #fff5f5; }
+
+    #form-message { display: none; margin-top: 16px; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; }
+    #form-message.error { display: block; background: #fdecea; color: #b02a37; border: 1px solid #f5c2c7; }
+    #form-message.info { display: block; background: #e7f5f5; color: #006666; border: 1px solid #b3dede; }
+    button.btn-submit { background: #008080; color: white; padding: 14px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 25px; box-shadow: 0 3px 6px rgba(0,0,0,0.15); }
+    button.btn-submit:hover { background: #006666; }
+    button.btn-submit:disabled { background: #9bbcbc; cursor: not-allowed; box-shadow: none; }
+
+    .hdr-left { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+    .home-card { display:inline-flex; align-items:center; gap:12px; padding:10px 22px 10px 14px; background:#fff; border:2px solid #008080; border-radius:12px; color:#008080; text-decoration:none; box-shadow:0 2px 8px rgba(0,128,128,.18); transition:background .15s, color .15s, transform .15s, box-shadow .15s; }
+    .home-card svg { width:30px; height:30px; flex:none; }
+    .home-card span { display:flex; flex-direction:column; line-height:1.15; }
+    .home-card b { font-size:18px; font-weight:700; }
+    .home-card small { font-size:11px; font-weight:600; opacity:.75; }
+    .home-card:hover { background:#008080; color:#fff; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,128,128,.32); }
+    @media (max-width: 800px) { .grid-4, .grid-3, .grid-2, .lane-grid { grid-template-columns: 1fr 1fr; } .model-wrap { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="form-header">
+    <div class="hdr-left"><a class="home-card" href="/" title="Back to the home menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h4.5v-5.5h4v5.5h4.5V10"/></svg><span><b>Home</b><small>Back to menu</small></span></a><h2>CW Commissioning &amp; Qualification</h2></div>
+    <img src="/cwcq-logo" alt="WIPOTEC" onerror="this.style.display='none'">
+  </div>
+
+  <!-- ===================== COVER / GENERAL ===================== -->
+  <h3>Cover Page</h3>
+  <div class="card-box">
+    <div class="model-wrap">
+      <div>
+        <div class="grid-2">
+          <div class="form-group"><label for="doc_no">Document No.<span class="required-mark">*</span></label><input type="text" id="doc_no" placeholder="e.g. TH261111_001_CWCR"></div>
+          <div class="form-group"><label for="model">Model<span class="required-mark">*</span></label><select id="model" onchange="updateModelPreview()"><option value="">- Select model -</option></select></div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group"><label for="model_number">Model Number</label><input type="text" id="model_number"></div>
+          <div class="form-group"><label for="serial_no">Machine Serial Number<span class="required-mark">*</span></label><input type="text" id="serial_no"></div>
+        </div>
+      </div>
+      <div class="model-preview" id="model_preview"><span>Model picture</span></div>
+    </div>
+  </div>
+
+  <h3>1. General Information</h3>
+  <div class="grid-2">
+    <div class="card-box sub">
+      <h4 style="margin-top:0;">Customer Information</h4>
+      <div class="form-group" style="margin-bottom:10px;"><label for="c_name">Customer Name<span class="required-mark">*</span></label><input type="text" id="c_name"></div>
+      <div class="form-group" style="margin-bottom:10px;"><label for="c_address">Address</label><input type="text" id="c_address"></div>
+      <div class="grid-2"><div class="form-group"><label for="c_country">Country</label><input type="text" id="c_country"></div><div class="form-group"><label for="c_zip">Zip Code</label><input type="text" id="c_zip"></div></div>
+      <div class="grid-3"><div class="form-group"><label for="c_poc">Point of Contact</label><input type="text" id="c_poc"></div><div class="form-group"><label for="c_phone">Phone</label><input type="text" id="c_phone"></div><div class="form-group"><label for="c_email">Email</label><input type="text" id="c_email"></div></div>
+    </div>
+    <div class="card-box sub">
+      <h4 style="margin-top:0;">End User Information <button type="button" class="btn-link" style="float:right;" onclick="copyCustomerToEndUser()">Same as customer</button></h4>
+      <div class="form-group" style="margin-bottom:10px;"><label for="e_name">Customer Name</label><input type="text" id="e_name"></div>
+      <div class="form-group" style="margin-bottom:10px;"><label for="e_address">Address</label><input type="text" id="e_address"></div>
+      <div class="grid-2"><div class="form-group"><label for="e_country">Country</label><input type="text" id="e_country"></div><div class="form-group"><label for="e_zip">Zip Code</label><input type="text" id="e_zip"></div></div>
+      <div class="grid-3"><div class="form-group"><label for="e_poc">Point of Contact</label><input type="text" id="e_poc"></div><div class="form-group"><label for="e_phone">Phone</label><input type="text" id="e_phone"></div><div class="form-group"><label for="e_email">Email</label><input type="text" id="e_email"></div></div>
+    </div>
+  </div>
+
+  <div class="card-box">
+    <h4 style="margin-top:0;">Machine Info</h4>
+    <div class="grid-3">
+      <div class="form-group"><label for="business">Business</label><select id="business"><option value="">-</option></select></div>
+      <div class="form-group"><label for="software_version">Software Version</label><input type="text" id="software_version"></div>
+      <div class="form-group"><label for="protection_class">Protection Class</label><input type="text" id="protection_class" placeholder="e.g. IP65"></div>
+    </div>
+    <div class="grid-3">
+      <div class="form-group"><label for="manufacturing_year">Manufacturing Year</label><input type="text" id="manufacturing_year"></div>
+      <div class="form-group"><label for="location">Location</label><input type="text" id="location"></div>
+      <div class="form-group"><label for="asset_number">Customer Asset Number</label><input type="text" id="asset_number"></div>
+    </div>
+    <div style="font-size:11px;color:#888;">Machine Model / Type, Model Number and Serial Number are taken from the Cover Page fields above.</div>
+    <div class="form-group" style="margin-top:10px;"><label for="additional_info">Additional Information</label><textarea id="additional_info" rows="3"></textarea></div>
+  </div>
+
+  <!-- ===================== 2. IQ ===================== -->
+  <h3>2. Installation Qualification</h3>
+  <div id="iq_container"></div>
+
+  <!-- ===================== 3. OQ ===================== -->
+  <h3>3. Operational Qualification</h3>
+  <div class="card-box">
+    <h4 style="margin-top:0;">Conveyor Lanes <span style="font-weight:normal;font-size:11px;color:#888;">— use a certified tachometer; the deviation must be below 1 %</span></h4>
+    <div id="lanes_container"></div>
+    <button type="button" class="btn-add" onclick="addLane()">+ Add Conveyor Lane</button>
+  </div>
+  <div id="oq_container"></div>
+
+  <!-- ===================== 4. INSTRUMENTS ===================== -->
+  <h3>4. Catchweighing / Checkweighing Instruments</h3>
+  <div class="card-box">
+    <div style="font-size:12px;color:#555;margin-bottom:8px;">The OIML R 51-1 (Edition 2006) Category X reference tables (Table 1, 3, 4 and 7) are printed in the PDF automatically.</div>
+    <div class="form-group"><label for="instruments_remarks">Remarks</label><textarea id="instruments_remarks" rows="3"></textarea></div>
+  </div>
+
+  <!-- ===================== 5. RELATED DOCUMENTS ===================== -->
+  <h3>5. Related Documents &amp; Sign</h3>
+  <div class="card-box">
+    <h4 style="margin-top:0;">5.1 Calibration Report Number</h4>
+    <div id="cal_container"></div>
+  </div>
+  <div class="card-box">
+    <h4 style="margin-top:0;">WIPOTEC Test Kit Information <span style="font-weight:normal;font-size:11px;color:#888;">— remembered on this computer (shared with the CW Calibration form)</span></h4>
+    <table class="cq-table" id="testkit_table"></table>
+    <button type="button" class="btn-add" style="margin-top:8px;" onclick="addTestKitRow()">+ Add Equipment</button>
+  </div>
+
+  <div class="grid-2">
+    <div class="card-box">
+      <h4 style="margin-top:0;">Customer Signature</h4>
+      <canvas id="customer_signature_pad" width="460" height="150" class="signature-canvas"></canvas>
+      <div style="margin:8px 0; display:flex; gap:8px; justify-content:center;">
+        <button type="button" class="btn-add-sm" onclick="customerSigPad.clear()">Clear</button>
+        <button type="button" class="btn-add-sm btn-upload-sig" onclick="document.getElementById('customer_signature_upload').click()">Upload Image</button>
+        <input type="file" id="customer_signature_upload" accept="image/*" style="display:none;" onchange="customerSigPad.handleUpload(event)">
+      </div>
+      <div class="grid-2"><div class="form-group"><label for="cs_name">Name</label><input type="text" id="cs_name"></div><div class="form-group"><label for="cs_position">Position</label><input type="text" id="cs_position"></div></div>
+      <div class="grid-3"><div class="form-group"><label for="cs_phone">Phone</label><input type="text" id="cs_phone"></div><div class="form-group"><label for="cs_email">Email</label><input type="text" id="cs_email"></div><div class="form-group"><label for="cs_date">Date</label><input type="date" id="cs_date"></div></div>
+    </div>
+    <div class="card-box">
+      <h4 style="margin-top:0;">Service Technician Signature</h4>
+      <canvas id="technician_signature_pad" width="460" height="150" class="signature-canvas"></canvas>
+      <div style="margin:8px 0; display:flex; gap:8px; justify-content:center;">
+        <button type="button" class="btn-add-sm" onclick="technicianSigPad.clear()">Clear</button>
+        <button type="button" class="btn-add-sm btn-upload-sig" onclick="document.getElementById('technician_signature_upload').click()">Upload Image</button>
+        <input type="file" id="technician_signature_upload" accept="image/*" style="display:none;" onchange="technicianSigPad.handleUpload(event)">
+      </div>
+      <div class="grid-2"><div class="form-group"><label for="tech_name">Name<span class="required-mark">*</span></label><input type="text" id="tech_name"></div><div class="form-group"><label for="tech_date">Date</label><input type="date" id="tech_date"></div></div>
+    </div>
+  </div>
+  <div class="form-group"><label for="service_comments">Additional Service Comments</label><textarea id="service_comments" rows="3"></textarea></div>
+
+  <div id="form-message"></div>
+  <button class="btn-submit" id="submit_btn" onclick="submitForm()">Generate Commissioning &amp; Qualification Report</button>
+  <div style="text-align:center; font-size:10px; color:#aaa; margin-top:14px;">WIPOTEC Checkweigher Commissioning &amp; Qualification</div>
+</div>
+
+<script>
+  const API_BASE_URL = '';  // same server that served this page
+  const TESTKIT_KEY = 'wipotec_calreport_testkit_last';  // same key as cwcr.html, so the kit is shared
+  let CFG = null;
+
+  const $ = id => document.getElementById(id);
+  function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function opts(list, selected) { return list.map(v => `<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(v)}</option>`).join(''); }
+
+  // ---------- Model picture ----------
+  function updateModelPreview() {
+    const m = $('model').value, box = $('model_preview');
+    box.innerHTML = m ? `<img src="${API_BASE_URL}/cwcq-model/${encodeURIComponent(m)}" alt="${esc(m)}">` : '<span>Model picture</span>';
+  }
+
+  function copyCustomerToEndUser() {
+    ['name', 'address', 'country', 'zip', 'poc', 'phone', 'email'].forEach(k => { $('e_' + k).value = $('c_' + k).value; });
+  }
+
+  // ---------- Checklists ----------
+  function colorResult(sel) {
+    sel.classList.toggle('r-pass', sel.value === 'Pass');
+    sel.classList.toggle('r-failed', sel.value === 'Failed');
+  }
+  function checklistTable(sec) {
+    const rows = sec.items.map(it => `<tr data-sec="${esc(sec.id)}" data-name="${esc(it.name)}">
+        <td>${esc(it.name)}${it.hint ? `<span class="hint">${esc(it.hint)}</span>` : ''}</td>
+        <td class="sel"><select class="res" onchange="colorResult(this)">${opts(CFG.results)}</select></td>
+        <td class="rmk"><input type="text" class="rmk"></td></tr>`).join('');
+    return `<button type="button" class="btn-all" onclick="passAll('${esc(sec.id)}', this)">Pass All</button>
+      ${sec.hint ? `<div class="hint" style="margin-bottom:4px;">${esc(sec.hint)}</div>` : ''}
+      <table class="cq-table"><tr><th>Checklist</th><th>Result</th><th>Remark</th></tr>${rows}</table>`;
+  }
+  // First click sets every item of the section to Pass, second click resets to "-"
+  function passAll(secId, btn) {
+    const sels = document.querySelectorAll(`tr[data-sec="${secId}"] select.res`);
+    const all = Array.from(sels).every(s => s.value === 'Pass');
+    sels.forEach(s => { s.value = all ? '-' : 'Pass'; colorResult(s); });
+    btn.textContent = all ? 'Pass All' : 'Reset';
+  }
+
+  function renderIQ() {
+    $('iq_container').innerHTML = CFG.iq.map(sec => {
+      let extra = '';
+      if (sec.id === '2.2') extra = `<h4>Weight Cell Information</h4><div id="wc_container"></div>
+        <button type="button" class="btn-add" onclick="addWeightCell()">+ Add Weight Cell</button>`;
+      if (sec.id === '2.4') extra = `<table class="cq-table" style="margin-bottom:12px;"><tr><th>Name Plate Information</th><th>Plate Info</th><th>Measured Info</th><th>Remark</th></tr>
+        <tr><td>Voltage (Vac)</td><td><input id="voltage_plate"></td><td><input id="voltage_measured"></td><td><input id="voltage_remark"></td></tr>
+        <tr><td>Frequency (Hz)</td><td><input id="frequency_plate"></td><td><input id="frequency_measured"></td><td><input id="frequency_remark"></td></tr></table>`;
+      const before = sec.id === '2.4' ? extra : '';
+      const after = sec.id === '2.2' ? extra : '';
+      return `<div class="card-box"><h4 style="margin-top:0;">${esc(sec.title)}</h4>${before}${checklistTable(sec)}${after}</div>`;
+    }).join('') + `<div class="card-box"><div class="form-group"><label for="iq_comments">Additional Comments (Installation Qualification)</label><textarea id="iq_comments" rows="3"></textarea></div></div>`;
+    addWeightCell();
+  }
+
+  function renderOQ() {
+    $('oq_container').innerHTML = CFG.oq.map(sec =>
+      `<div class="card-box"><h4 style="margin-top:0;">${esc(sec.title)}</h4>${checklistTable(sec)}</div>`).join('');
+  }
+
+  // ---------- Weight cells ----------
+  const WC_FIELDS = [['cell_type', 'Weight Cell Type'], ['cell_id', 'ID'], ['pd', 'PD'], ['serial', 'Serial Number'],
+                     ['max', 'Max'], ['e', 'e'], ['d', 'd'], ['dead_load', 'Dead Load']];
+  function addWeightCell() {
+    const box = document.createElement('div');
+    box.className = 'card-box sub wc-item';
+    box.innerHTML = `<button type="button" class="btn-remove" onclick="this.parentElement.remove(); renumber('.wc-item', 'Weight Cell No.')">Remove</button>
+      <div class="wc-title" style="font-weight:bold;color:#008080;font-size:12px;margin-bottom:8px;"></div>
+      <div class="grid-4">${WC_FIELDS.map(([k, l]) => `<div class="form-group"><label>${l}</label><input type="text" data-k="${k}"></div>`).join('')}</div>`;
+    $('wc_container').appendChild(box);
+    renumber('.wc-item', 'Weight Cell No.');
+  }
+  function renumber(selector, label) {
+    document.querySelectorAll(selector).forEach((el, i) => { el.querySelector('[class$="-title"]').textContent = `${label} ${i + 1}`; });
+  }
+
+  // ---------- Conveyor lanes + deviation ----------
+  function addLane() {
+    const box = document.createElement('div');
+    box.className = 'card-box sub lane-item';
+    box.innerHTML = `<button type="button" class="btn-remove" onclick="this.parentElement.remove(); renumber('.lane-item', 'Conveyor Lane No.')">Remove</button>
+      <div class="lane-title" style="font-weight:bold;color:#008080;font-size:12px;margin-bottom:8px;"></div>
+      <div class="grid-3">
+        <div class="form-group"><label>Min. Throughput (Pcs/min)</label><input type="number" step="any" data-k="min_throughput"></div>
+        <div class="form-group"><label>Max. Throughput (Pcs/min)</label><input type="number" step="any" data-k="max_throughput"></div>
+        <div class="form-group"><label>Speed Unit</label><select data-k="speed_unit" onchange="updateDeviation(this)">${opts(CFG.speed_units)}</select></div>
+      </div>
+      <div class="lane-grid">
+        <div class="hdr"></div><div class="hdr">Display value</div><div class="hdr">Measured value</div><div class="hdr"></div><div class="hdr">Deviation &lt;1%</div>
+        <div style="font-size:12px;">Min. Conveyor speed</div>
+        <input type="number" step="any" data-k="min_speed_display" oninput="updateDeviation(this)">
+        <input type="number" step="any" data-k="min_speed_measured" oninput="updateDeviation(this)">
+        <div class="unit" style="font-size:12px;color:#666;"></div>
+        <div class="dev" data-dev="min">—</div>
+        <div style="font-size:12px;">Max. Conveyor speed</div>
+        <input type="number" step="any" data-k="max_speed_display" oninput="updateDeviation(this)">
+        <input type="number" step="any" data-k="max_speed_measured" oninput="updateDeviation(this)">
+        <div class="unit" style="font-size:12px;color:#666;"></div>
+        <div class="dev" data-dev="max">—</div>
+      </div>`;
+    $('lanes_container').appendChild(box);
+    renumber('.lane-item', 'Conveyor Lane No.');
+    updateDeviation(box.querySelector('select'));
+  }
+  // Same formula as the Excel and the PDF: ((measured - display) / display) * 100, PASS when |dev| < 1 %
+  function updateDeviation(el) {
+    const lane = el.closest('.lane-item');
+    const unit = lane.querySelector('[data-k="speed_unit"]').value;
+    lane.querySelectorAll('.unit').forEach(u => { u.textContent = unit; });
+    ['min', 'max'].forEach(k => {
+      const d = parseFloat(lane.querySelector(`[data-k="${k}_speed_display"]`).value);
+      const m = parseFloat(lane.querySelector(`[data-k="${k}_speed_measured"]`).value);
+      const out = lane.querySelector(`[data-dev="${k}"]`);
+      out.className = 'dev';
+      if (isNaN(d) || isNaN(m) || d === 0) { out.textContent = '—'; return; }
+      const dev = (m - d) / d * 100, ok = Math.abs(dev) < 1;
+      out.textContent = `${dev >= 0 ? '+' : ''}${dev.toFixed(2)} % ${ok ? 'PASS' : 'FAIL'}`;
+      out.classList.add(ok ? 'ok' : 'bad');
+    });
+  }
+
+  // ---------- Calibration reports ----------
+  function renderCalReports() {
+    let html = '';
+    for (let i = 1; i <= CFG.cal_report_slots; i++) {
+      html += `<div class="form-group" style="margin-bottom:8px;"><label>Checkweigher / Weight Scale No.${i}</label><input type="text" class="cal-report"></div>`;
+    }
+    $('cal_container').innerHTML = html;
+  }
+
+  // ---------- Test kit (shared with the CW Calibration form via localStorage) ----------
+  let testKit = [];
+  function loadTestKit() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TESTKIT_KEY) || 'null');
+      if (Array.isArray(saved) && saved.length) { testKit = saved; return; }
+    } catch (e) { /* ignore */ }
+    testKit = CFG.test_kit_default.map(eq => ({ equipment: eq, serial: '', cert: '', calDate: '', dueDate: '' }));
+  }
+  function saveTestKit() { try { localStorage.setItem(TESTKIT_KEY, JSON.stringify(testKit)); } catch (e) { /* ignore */ } }
+  function daysUntil(iso) { if (!iso) return null; const t = new Date(iso + 'T00:00:00'); return Math.round((t - new Date().setHours(0, 0, 0, 0)) / 86400000); }
+  function renderTestKit() {
+    const rows = testKit.map((r, i) => {
+      const left = daysUntil(r.dueDate);
+      const flag = left === null ? '' : (left < 0 ? 'tk-overdue' : (left <= 30 ? 'tk-due-soon' : ''));
+      return `<tr>
+        <td><input data-i="${i}" data-f="equipment" value="${esc(r.equipment)}"></td>
+        <td><input data-i="${i}" data-f="serial" value="${esc(r.serial)}"></td>
+        <td><input data-i="${i}" data-f="cert" value="${esc(r.cert)}"></td>
+        <td><input type="date" data-i="${i}" data-f="calDate" value="${esc(r.calDate)}"></td>
+        <td><input type="date" data-i="${i}" data-f="dueDate" value="${esc(r.dueDate)}" class="${flag}" title="${left === null ? '' : (left < 0 ? 'Calibration overdue' : left + ' day(s) left')}"></td>
+        <td style="width:30px;"><button type="button" class="btn-remove" style="float:none;" onclick="testKit.splice(${i},1); saveTestKit(); renderTestKit();">✕</button></td></tr>`;
+    }).join('');
+    $('testkit_table').innerHTML = `<tr><th>Equipment Type</th><th>Serial Number</th><th>Certificate No.</th><th>Calibration Date</th><th>Due Date</th><th></th></tr>${rows}`;
+    $('testkit_table').querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => {
+      testKit[+inp.dataset.i][inp.dataset.f] = inp.value; saveTestKit();
+      if (inp.dataset.f === 'dueDate') renderTestKit();
+    }));
+  }
+  function addTestKitRow() { testKit.push({ equipment: '', serial: '', cert: '', calDate: '', dueDate: '' }); saveTestKit(); renderTestKit(); }
+
+  // ---------- Signature pads (same behaviour as the other forms) ----------
+  function createSignaturePad(canvasId, uploadInputId) {
+    const canvas = $(canvasId), ctx = canvas.getContext('2d');
+    let drawing = false, has = false, uploaded = null;
+    const bg = () => { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); };
+    bg();
+    const pos = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; };
+    canvas.addEventListener('pointerdown', e => { e.preventDefault(); drawing = true; uploaded = null; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+    canvas.addEventListener('pointermove', e => { if (!drawing) return; e.preventDefault(); const p = pos(e); ctx.lineTo(p.x, p.y); ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke(); has = true; });
+    window.addEventListener('pointerup', () => { drawing = false; });
+    canvas.addEventListener('pointerleave', () => { drawing = false; });
+    return {
+      clear() { bg(); has = false; uploaded = null; const u = $(uploadInputId); if (u) u.value = ''; },
+      handleUpload(evt) {
+        const f = evt.target.files[0]; if (!f) return;
+        const rd = new FileReader();
+        rd.onload = e => {
+          uploaded = e.target.result;
+          const img = new Image();
+          img.onload = () => { bg(); const s = Math.min(canvas.width / img.width, canvas.height / img.height, 1); const w = img.width * s, h = img.height * s; ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h); };
+          img.src = uploaded; has = true;
+        };
+        rd.readAsDataURL(f);
+      },
+      getDataUrl() { return !has ? '' : (uploaded || canvas.toDataURL('image/png')); }
+    };
+  }
+  const customerSigPad = createSignaturePad('customer_signature_pad', 'customer_signature_upload');
+  const technicianSigPad = createSignaturePad('technician_signature_pad', 'technician_signature_upload');
+
+  // ---------- Init ----------
+  async function init() {
+    try {
+      CFG = await (await fetch(`${API_BASE_URL}/cwcq-config`)).json();
+    } catch (e) {
+      showMessage('Could not load the form checklist from the server. Please restart the program (Run_PV.bat) and refresh this page.', 'error');
+      return;
+    }
+    $('model').innerHTML = '<option value="">- Select model -</option>' + opts(CFG.models);
+    $('business').innerHTML = '<option value="">-</option>' + opts(CFG.business);
+    renderIQ();
+    renderOQ();
+    addLane();
+    renderCalReports();
+    loadTestKit();
+    renderTestKit();
+  }
+
+  // ---------- Submit ----------
+  function dmy(id) { const v = $(id).value; if (!v) return ''; const [y, m, d] = v.split('-'); return `${d}.${m}.${y}`; }
+  function isoToDmy(v) { if (!v) return ''; const [y, m, d] = v.split('-'); return d ? `${d}.${m}.${y}` : v; }
+  function showMessage(text, type = 'error') { const b = $('form-message'); b.textContent = text; b.className = type; }
+  function clearMessage() { const b = $('form-message'); b.textContent = ''; b.className = ''; }
+
+  function validate() {
+    const req = [['doc_no', 'Document No.'], ['model', 'Model'], ['serial_no', 'Machine Serial Number'], ['c_name', 'Customer Name'], ['tech_name', 'Service Technician Name']];
+    const missing = [];
+    req.forEach(([id, label]) => { const el = $(id); el.classList.remove('input-error'); if (!el.value.trim()) { el.classList.add('input-error'); missing.push(label); } });
+    return missing;
+  }
+  function party(p) {
+    return { name: $(p + '_name').value, address: $(p + '_address').value, country: $(p + '_country').value, zip_code: $(p + '_zip').value,
+             poc_name: $(p + '_poc').value, poc_phone: $(p + '_phone').value, poc_email: $(p + '_email').value };
+  }
+  function collectItems(selector) {
+    return Array.from(document.querySelectorAll(selector)).map(box => {
+      const o = {}; box.querySelectorAll('[data-k]').forEach(el => { o[el.dataset.k] = el.value; }); return o;
+    });
+  }
+
+  async function submitForm() {
+    clearMessage();
+    if (!CFG) { showMessage('The checklist has not loaded. Please refresh the page.', 'error'); return; }
+    const missing = validate();
+    if (missing.length) {
+      showMessage(`Please fill in the required fields before generating the PDF: ${missing.join(', ')}`, 'error');
+      const first = document.querySelector('.input-error'); if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const checks = {};
+    document.querySelectorAll('tr[data-sec]').forEach(tr => {
+      const s = tr.dataset.sec; checks[s] = checks[s] || {};
+      checks[s][tr.dataset.name] = { result: tr.querySelector('.res').value, remark: tr.querySelector('input.rmk').value };
+    });
+    const v = id => $(id).value;
+    const payload = {
+      doc_no: v('doc_no'), model: v('model'), model_number: v('model_number'), serial_no: v('serial_no'),
+      customer: party('c'), end_user: party('e'),
+      business: v('business'), software_version: v('software_version'), protection_class: v('protection_class'),
+      manufacturing_year: v('manufacturing_year'), location: v('location'), asset_number: v('asset_number'),
+      additional_info: v('additional_info'),
+      checks,
+      weight_cells: collectItems('.wc-item'),
+      voltage_plate: v('voltage_plate'), voltage_measured: v('voltage_measured'), voltage_remark: v('voltage_remark'),
+      frequency_plate: v('frequency_plate'), frequency_measured: v('frequency_measured'), frequency_remark: v('frequency_remark'),
+      iq_comments: v('iq_comments'),
+      lanes: collectItems('.lane-item'),
+      instruments_remarks: v('instruments_remarks'),
+      cal_reports: Array.from(document.querySelectorAll('.cal-report')).map(i => i.value),
+      test_kit: testKit.map(r => ({ equipment: r.equipment, serial: r.serial, cert: r.cert, cal_date: isoToDmy(r.calDate), due_date: isoToDmy(r.dueDate) })),
+      customer_sign_name: v('cs_name'), customer_sign_position: v('cs_position'), customer_sign_phone: v('cs_phone'),
+      customer_sign_email: v('cs_email'), customer_sign_date: dmy('cs_date'), customer_signature: customerSigPad.getDataUrl(),
+      technician_name: v('tech_name'), technician_date: dmy('tech_date'), technician_signature: technicianSigPad.getDataUrl(),
+      service_comments: v('service_comments')
+    };
+
+    const btn = $('submit_btn'), label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Generating PDF...';
+    try {
+      const response = await fetch(`${API_BASE_URL}/generate-cwcq-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!response.ok) {
+        let detail = `Server returned status ${response.status}`;
+        try { const j = await response.json(); detail = j.detail ? JSON.stringify(j.detail) : detail; } catch (e) {}
+        showMessage(`Failed to generate PDF: ${detail}`, 'error');
+        return;
+      }
+      const blob = await response.blob(), url = URL.createObjectURL(blob), a = document.createElement('a');
+      const safe = String(payload.doc_no || '').trim().replace(/[\\/:*?"<>|\r\n\t]+/g, '-').replace(/\s+/g, '_').replace(/^[-_.]+|[-_.]+$/g, '') || 'Document';
+      a.href = url; a.download = `CWCQ_Report_${safe}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+      showMessage('PDF generated successfully', 'info');
+    } catch (err) {
+      showMessage(`Could not connect to the server: ${err.message}`, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = label;
+    }
+  }
+
+  init();
+</script>
+<script>
+/* Always open Home as a fresh address so a cached old home page is never shown */
+document.querySelectorAll('a.home-card').forEach(function(a){ a.href = '/?v=' + Date.now(); });
+</script>
+</body>
+</html>
