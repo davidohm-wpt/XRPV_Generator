@@ -21,9 +21,9 @@ if exist "!GIT_EXE!" (
 
     if exist "%~dp0.git" (
         :: มี .git อยู่แล้ว → pull (ดึงเฉพาะที่เปลี่ยน)
-        :: Safety: "reset --hard" would silently wipe local work, so the update is
-        :: skipped when there are uncommitted edits, unpushed commits, or another
-        :: branch is checked out (e.g. while testing a fix before pushing it).
+        REM Safety: "reset --hard" would silently wipe local work, so the update is
+        REM skipped when there are uncommitted edits, unpushed commits, or another
+        REM branch is checked out - for example while testing a fix before pushing it.
         pushd "%~dp0"
         "!GIT_EXE!" fetch origin !GITHUB_BRANCH! >nul 2>&1
         if !errorlevel! neq 0 (
