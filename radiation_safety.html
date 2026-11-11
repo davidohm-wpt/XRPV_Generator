@@ -570,7 +570,7 @@
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = `XRSC_Certificate_${payload.cert_no || 'Document'}.pdf`; a.click();
+      a.href = url; a.download = `XRSC_Certificate_${String(payload.cert_no || '').trim().replace(/[\\/:*?"<>|\r\n\t]+/g, '-').replace(/\s+/g, '_').replace(/^[-_.]+|[-_.]+$/g, '') || 'Document'}.pdf`; a.click();
       window.URL.revokeObjectURL(url);
       showMessage('PDF generated successfully', 'info');
     } catch (err) {

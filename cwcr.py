@@ -13,6 +13,8 @@ from fastapi import APIRouter, Body
 from fastapi.responses import FileResponse, JSONResponse, Response
 from jinja2 import Template
 
+from assets import LOGO_HEADER_URI, BASE_CSS, content_disposition
+
 router = APIRouter()
 logger = logging.getLogger("cwcr")
 CWCR_HTML_PATH = Path(__file__).resolve().parent / "cwcr.html"
@@ -130,7 +132,6 @@ def build_load_rows(rows, get_test_load, main_info, decimals):
 # headers, data/checklist tables) as the XRPV Generator's PDF,
 # rebuilt from scratch for the CWCR data shape.
 # ============================================================
-WIPOTEC_LOGO_B64 = "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"
 
 HTML_TEMPLATE = r"""
 <!DOCTYPE html>
@@ -148,39 +149,19 @@ HTML_TEMPLATE = r"""
     @top-right { content: element(page-logo); vertical-align: bottom; padding-bottom: 2px; }
   }
   @page :first { margin-top: 12mm; @top-right { content: ""; } }
-  *, *::before, *::after { box-sizing: border-box; }
-  .page-logo { position: running(page-logo); width: 150px; height: auto; display: block; }
-  body { font-family: Arial, 'Sarabun', sans-serif; color: #1a1a1a; margin: 0; padding: 0; font-size: 8pt; line-height: 1.25; }
-  .section-block, .data-table, .checklist-table, .signature-table, .product-card { page-break-inside: avoid; break-inside: avoid; }
-  .section-header { background-color: #009999; color: #ffffff; padding: 3.5px 6px; font-size: 8.5pt; font-weight: bold; margin-top: 8px; margin-bottom: 3px; page-break-after: avoid; break-after: avoid; }
+  {{ base_css }}
+  /* CWCR-specific differences from the shared PDF style */
   .sub-header { font-weight: bold; font-size: 8pt; color: #009999; margin: 6px 0 2px; }
-  .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-  .company-info { font-size: 7.5pt; line-height: 1.2; color: #222; }
-  .company-name { font-weight: bold; font-size: 8.5pt; }
-  .logo-cell { text-align: right; vertical-align: top; }
-  .logo-img { width: 150px; height: auto; display: inline-block; }
-  .doc-title { font-size: 11pt; font-weight: bold; color: #000; margin-bottom: 8px; }
-  .slash { color: #009999; font-weight: bold; }
-  table.data-table, table.checklist-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
-  table.data-table td, table.data-table th, table.checklist-table td, table.checklist-table th { border: 1px solid #c2d6d6; padding: 2.5px 5px; font-size: 7.5pt; }
-  table.checklist-table th, table.data-table th { background-color: #009999; color: #ffffff; font-weight: bold; font-size: 7.5pt; text-align: left; border: 1px solid #008080; }
-  .label-col { width: 24%; font-weight: bold; color: #333; background-color: #f2f8f8; }
-  .val-col { color: #000000; }
-  .chk-col { text-align: center; width: 60px; font-weight: bold; }
-  .pass-text, .good-text { color: #008000; font-weight: bold; }
-  .fail-text, .bad-text { color: #cc0000; font-weight: bold; }
-  .na-text { color: #666666; }
-  .product-card, .lane-card { margin-bottom: 6px; border: 1px solid #c2d6d6; padding: 4px; background-color: #fafdfd; }
+  .label-col { width: 24%; }
+  .chk-col { width: 60px; }
+  .good-text { color: #008000; font-weight: bold; }
+  .bad-text { color: #cc0000; font-weight: bold; }
+  .lane-card { margin-bottom: 6px; border: 1px solid #c2d6d6; padding: 4px; background-color: #fafdfd; }
   .lane-title { font-size: 9.5pt; font-weight: bold; color: #009999; margin: 10px 0 4px; border-bottom: 2px solid #009999; padding-bottom: 2px; }
-  .signature-table { width: 100%; margin-top: 10px; border-collapse: collapse; }
-  .signature-table td { width: 50%; vertical-align: top; padding: 3px; }
-  .sig-box { border: 1px solid #c2d6d6; border-top: 3px solid #009999; padding: 6px; text-align: center; background-color: #fafdfd; }
-  .sig-line { margin-top: 24px; border-top: 1px solid #4a5568; width: 70%; margin-left: auto; margin-right: auto; }
-  .footer-text { font-size: 7pt; color: #666; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 4px; }
 </style>
 </head>
 <body>
-  <img class="page-logo" src="data:image/png;base64,{{ logo }}" alt="WIPOTEC">
+  <img class="page-logo" src="{{ logo }}" alt="WIPOTEC">
   <table class="header-table">
     <tr>
       <td class="company-info" style="width: 70%; vertical-align: top;">
@@ -188,7 +169,7 @@ HTML_TEMPLATE = r"""
         <div>Document No.: <strong>{{ m.documentNo or '—' }}</strong></div>
       </td>
       <td class="logo-cell" style="width: 30%;">
-        <img class="logo-img" src="data:image/png;base64,{{ logo }}" alt="WIPOTEC">
+        <img class="logo-img" src="{{ logo }}" alt="WIPOTEC">
       </td>
     </tr>
   </table>
@@ -489,7 +470,8 @@ def build_pdf_context(payload: dict) -> dict:
     fr.setdefault("customer", {})
 
     return {
-        "logo": WIPOTEC_LOGO_B64,
+        "logo": LOGO_HEADER_URI,
+        "base_css": BASE_CSS,
         "m": m,
         "test_kit": m.get("testKitRows") or [],
         "system_checklist": m.get("systemChecklist") or [],
@@ -524,7 +506,7 @@ def generate_pdf(payload: dict = Body(...)):
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+            headers={"Content-Disposition": content_disposition(filename)}
         )
     except Exception as e:
         logger.error(f"PDF generation failed: {e}\n{traceback.format_exc()}")

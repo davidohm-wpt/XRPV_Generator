@@ -638,7 +638,7 @@
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = `PM_Report_${payload.doc_no || 'Document'}.pdf`; a.click();
+      a.href = url; a.download = `PM_Report_${String(payload.doc_no || '').trim().replace(/[\\/:*?"<>|\r\n\t]+/g, '-').replace(/\s+/g, '_').replace(/^[-_.]+|[-_.]+$/g, '') || 'Document'}.pdf`; a.click();
       window.URL.revokeObjectURL(url);
       showMessage('PDF generated successfully', 'info');
     } catch (err) {

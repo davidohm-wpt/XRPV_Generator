@@ -1,15 +1,18 @@
 """X-Ray Radiation Safety Check (XRSC) certificate: form config, PDF template and routes."""
+import logging
+import traceback
 from pathlib import Path
 from typing import Dict
 import weasyprint
 from fastapi import APIRouter, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from jinja2 import Template
 from pydantic import BaseModel
 
-from assets import LOGO_TOP_URI, LOGO_HEADER_URI, BASE_CSS
+from assets import LOGO_TOP_URI, LOGO_HEADER_URI, BASE_CSS, safe_filename_part, content_disposition
 
 router = APIRouter()
+logger = logging.getLogger("rs")
 RS_HTML_PATH = Path(__file__).resolve().parent / "radiation_safety.html"
 
 # Single source of truth for the checklist wording. The web form loads this via
@@ -254,7 +257,21 @@ def rs_config():
 
 @router.post("/generate-rs-pdf")
 def generate_rs_pdf(data: RSData):
-    blank = {"initial": "-", "as_left": "-", "comments": ""}
+    try:
+        logger.info(f"Generate RS PDF requested for cert_no={data.cert_no!r}")
+        pdf = _build_rs_pdf(data)
+        logger.info(f"RS PDF generated successfully for cert_no={data.cert_no!r} ({len(pdf)} bytes)")
+    except Exception as e:
+        logger.error(f"RS PDF generation failed: {e}\n{traceback.format_exc()}")
+        return JSONResponse(status_code=500,
+                            content={"detail": f"PDF generation failed: {type(e).__name__}: {e}"})
+    name = f"XRSC_Certificate_{safe_filename_part(data.cert_no)}.pdf"
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": content_disposition(name)})
+
+
+def _build_rs_pdf(data: RSData) -> bytes:
+    blank ={"initial": "-", "as_left": "-", "comments": ""}
     pd_rows = {n: {**blank, **data.powered_down.get(n, {})} for n in POWERED_DOWN}
     pu_rows = {n: {**blank, **data.powered_up.get(n, {})} for n in POWERED_UP}
     part1 = [(g, [(q, data.part1.get(q, "-")) for q in qs]) for g, qs in PART1]
@@ -287,7 +304,4 @@ def generate_rs_pdf(data: RSData):
         cls=_cls, cert_css=cert_css, base_css=BASE_CSS,
         logo_top=LOGO_TOP_URI, logo_header=LOGO_HEADER_URI,
     )
-    pdf = weasyprint.HTML(string=html).write_pdf()
-    safe = "".join(c for c in data.cert_no if c.isalnum() or c in "-_") or "report"
-    return Response(content=pdf, media_type="application/pdf",
-                    headers={"Content-Disposition": f"attachment; filename=XRSC_Certificate_{safe}.pdf"})
+    return weasyprint.HTML(string=html).write_pdf()

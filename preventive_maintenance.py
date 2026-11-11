@@ -1,15 +1,18 @@
 """X-Ray Preventive Maintenance (PM) report: form config, PDF template and routes."""
+import logging
+import traceback
 from pathlib import Path
 from typing import Dict, List
 import weasyprint
 from fastapi import APIRouter, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from jinja2 import Template
 from pydantic import BaseModel
 
-from assets import LOGO_TOP_URI, LOGO_HEADER_URI, BASE_CSS
+from assets import LOGO_TOP_URI, LOGO_HEADER_URI, BASE_CSS, safe_filename_part, content_disposition
 
 router = APIRouter()
+logger = logging.getLogger("pm")
 PM_HTML_PATH = Path(__file__).resolve().parent / "preventive_maintenance.html"
 
 RESULT = ["-", "✓", "✗", "N/A"]
@@ -306,6 +309,20 @@ def pm_config():
 
 @router.post("/generate-pm-pdf")
 def generate_pm_pdf(data: PMData):
+    try:
+        logger.info(f"Generate PM PDF requested for doc_no={data.doc_no!r}")
+        pdf = _build_pm_pdf(data)
+        logger.info(f"PM PDF generated successfully for doc_no={data.doc_no!r} ({len(pdf)} bytes)")
+    except Exception as e:
+        logger.error(f"PM PDF generation failed: {e}\n{traceback.format_exc()}")
+        return JSONResponse(status_code=500,
+                            content={"detail": f"PDF generation failed: {type(e).__name__}: {e}"})
+    name = f"PM_Report_{safe_filename_part(data.doc_no)}.pdf"
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": content_disposition(name)})
+
+
+def _build_pm_pdf(data: PMData) -> bytes:
     groups = []
     for g in PM_GROUPS:
         sent = data.checks.get(g["name"], {})
@@ -330,7 +347,4 @@ def generate_pm_pdf(data: PMData):
         left=left, right=right, photos=photos, cls=_cls, doc_css=doc_css, base_css=BASE_CSS,
         logo_top=LOGO_TOP_URI, logo_header=LOGO_HEADER_URI,
     )
-    pdf = weasyprint.HTML(string=html).write_pdf()
-    safe = "".join(c for c in data.doc_no if c.isalnum() or c in "-_") or "report"
-    return Response(content=pdf, media_type="application/pdf",
-                    headers={"Content-Disposition": f"attachment; filename=PM_Report_{safe}.pdf"})
+    return weasyprint.HTML(string=html).write_pdf()

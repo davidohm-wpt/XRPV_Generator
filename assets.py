@@ -56,6 +56,20 @@ BASE_CSS = r"""
     vertical-align: top;
   }
 
+  .logo-img {
+    width: 150px;
+    height: auto;
+    display: inline-block;
+  }
+
+  /* Logo repeated in the top-right of every page after the first (see @top-right). */
+  .page-logo {
+    position: running(page-logo);
+    width: 150px;
+    height: auto;
+    display: block;
+  }
+
   .doc-title {
     font-size: 11pt;
     font-weight: bold;
@@ -156,3 +170,36 @@ BASE_CSS = r"""
     break-inside: avoid;
   }
 """
+
+
+# ------------------------------------------------------------
+# PDF download filenames
+# ------------------------------------------------------------
+import re as _re
+from urllib.parse import quote as _quote
+
+
+def safe_filename_part(value, default: str = "report") -> str:
+    """Make user text (cert no., company name...) safe to use inside a filename.
+
+    Keeps Thai and other letters; only characters Windows forbids are replaced.
+    """
+    s = _re.sub(r'[\\/:*?"<>|\x00-\x1f]+', "-", str(value or "").strip())
+    s = _re.sub(r"\s+", "_", s).strip("-_.")
+    return s or default
+
+
+def content_disposition(filename: str) -> str:
+    """Content-Disposition header that is valid for any filename.
+
+    HTTP headers must be latin-1, so a Thai filename used to make the whole PDF
+    response fail. `filename` carries an ASCII-only fallback and `filename*`
+    (RFC 5987) the full UTF-8 name, which every current browser uses.
+    """
+    stem, dot, ext = filename.rpartition(".")
+    if not dot:
+        stem, ext = filename, ""
+    ascii_stem = _re.sub(r"[^A-Za-z0-9._-]", "", stem)
+    ascii_stem = _re.sub(r"([_-])[_-]+", r"\1", ascii_stem).strip("-_.") or "report"
+    fallback = ascii_stem + (f".{ext}" if ext else "")
+    return f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{_quote(filename, safe='')}"

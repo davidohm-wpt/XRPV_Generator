@@ -1402,8 +1402,12 @@ async function generatePdf(){
     }
     const blob = await response.blob();
     const disposition = response.headers.get("Content-Disposition") || "";
-    const match = disposition.match(/filename="?([^"]+)"?/);
-    const filename = match ? match[1] : "CWCR_Report.pdf";
+    // Prefer filename* (full UTF-8 name, e.g. Thai company names); filename is an ASCII fallback.
+    const starMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    let filename = "CWCR_Report.pdf";
+    if (starMatch) { try { filename = decodeURIComponent(starMatch[1]); } catch (e) {} }
+    else if (match) { filename = match[1]; }
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
