@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- CW Commissioning & Qualification (CWCQ) front end — Ver. 0.11 -->
+<!-- CW Commissioning & Qualification (CWCQ) front end — Ver. 0.12 -->
 <head>
   <meta charset="UTF-8">
   <title>CW Commissioning &amp; Qualification Form</title>
@@ -50,6 +50,14 @@
     .model-preview span { font-size: 11px; color: #aaa; }
     .model-preview.drop { cursor: pointer; border-style: dashed; border-color: #008080; }
     .model-pic-actions { display: none; gap: 6px; justify-content: center; margin-top: 6px; }
+    .cal-row { display: grid; grid-template-columns: 1fr 34px; gap: 8px; align-items: end; margin-bottom: 8px; }
+    .cal-row .btn-remove { float: none; height: 31px; }
+    .count-note { font-weight: normal; font-size: 11px; color: #888; }
+    .pic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 8px 0; }
+    .pic-item { position: relative; border: 1px solid #d5e3e3; border-radius: 6px; background: #fff; height: 120px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .pic-item img { max-width: 100%; max-height: 116px; }
+    .pic-item .btn-remove { position: absolute; top: 4px; right: 4px; float: none; padding: 1px 6px; }
+    .pic-item .pic-no { position: absolute; left: 4px; bottom: 4px; background: rgba(0,128,128,.85); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 3px; }
 
     .dev { font-weight: bold; font-size: 12px; padding: 7px 10px; border-radius: 4px; background: #f4f4f4; color: #777; text-align: center; }
     .dev.ok { background: #eaf6ed; color: #1e7e34; }
@@ -81,7 +89,7 @@
 <body>
 <div class="container">
   <div class="form-header">
-    <div class="hdr-left"><a class="home-card" href="/" title="Back to the home menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h4.5v-5.5h4v5.5h4.5V10"/></svg><span><b>Home</b><small>Back to menu</small></span></a><h2>CW Commissioning &amp; Qualification <span class="ver-badge">Ver. 0.11</span></h2></div>
+    <div class="hdr-left"><a class="home-card" href="/" title="Back to the home menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h4.5v-5.5h4v5.5h4.5V10"/></svg><span><b>Home</b><small>Back to menu</small></span></a><h2>CW Commissioning &amp; Qualification <span class="ver-badge">Ver. 0.12</span></h2></div>
     <img src="/cwcq-logo" alt="WIPOTEC" onerror="this.style.display='none'">
   </div>
 
@@ -168,8 +176,9 @@
   <!-- ===================== 5. RELATED DOCUMENTS ===================== -->
   <h3>5. Related Documents &amp; Sign</h3>
   <div class="card-box">
-    <h4 style="margin-top:0;">5.1 Calibration Report Number</h4>
+    <h4 style="margin-top:0;">5.1 Calibration Report Number <span class="count-note" id="cal_count"></span></h4>
     <div id="cal_container"></div>
+    <button type="button" class="btn-add" id="cal_add_btn" onclick="addCalReport()">+ Add Calibration Report</button>
   </div>
   <div class="card-box">
     <h4 style="margin-top:0;">WIPOTEC Test Kit Information <span style="font-weight:normal;font-size:11px;color:#888;">— remembered on this computer (shared with the CW Calibration form)</span></h4>
@@ -201,6 +210,12 @@
     </div>
   </div>
   <div class="form-group"><label for="service_comments">Additional Service Comments</label><textarea id="service_comments" rows="3"></textarea></div>
+  <div class="card-box" style="margin-top:12px;">
+    <h4 style="margin-top:0;">Additional Service Comments No.x <span class="count-note" id="svc_count"></span></h4>
+    <div class="hint" style="margin:-4px 0 8px;">Add a numbered comment for each finding; each comment can have related pictures.</div>
+    <div id="svc_container"></div>
+    <button type="button" class="btn-add" id="svc_add_btn" onclick="addServiceComment()">+ Add Service Comment</button>
+  </div>
 
   <div id="form-message"></div>
   <button class="btn-submit" id="submit_btn" onclick="submitForm()">Generate Commissioning &amp; Qualification Report</button>
@@ -228,23 +243,10 @@
     if (other) box.innerHTML = customModelImg ? `<img src="${customModelImg}" alt="Model picture">` : '<span>Click to attach a picture</span>';
     else box.innerHTML = m ? `<img src="${API_BASE_URL}/cwcq-model/${encodeURIComponent(m)}" alt="${esc(m)}">` : '<span>Model picture</span>';
   }
-  function handleModelPicture(evt) {
+  async function handleModelPicture(evt) {
     const f = evt.target.files[0]; if (!f) return;
-    const rd = new FileReader();
-    rd.onload = e => {
-      const img = new Image();
-      img.onload = () => {  // scale large photos down to keep the request small
-        const s = Math.min(1, 1200 / Math.max(img.width, img.height));
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
-        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-        ctx.drawImage(img, 0, 0, c.width, c.height);
-        customModelImg = f.type === 'image/png' ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.9);
-        updateModelPreview();
-      };
-      img.src = e.target.result;
-    };
-    rd.readAsDataURL(f);
+    try { customModelImg = await scaleImage(f); } catch (e) { return; }  // large photos are scaled down
+    updateModelPreview();
   }
   function clearModelPicture() { customModelImg = ''; $('model_pic_upload').value = ''; updateModelPreview(); }
   function modelName() { return $('model').value === 'Other' ? $('model_other').value.trim() : $('model').value; }
@@ -373,12 +375,97 @@
   }
 
   // ---------- Calibration reports ----------
+  // 5.1: add / remove rows, from 1 up to CFG.cal_report_max (14)
   function renderCalReports() {
-    let html = '';
-    for (let i = 1; i <= CFG.cal_report_slots; i++) {
-      html += `<div class="form-group" style="margin-bottom:8px;"><label>Checkweigher / Weight Scale No.${i}</label><input type="text" class="cal-report"></div>`;
+    $('cal_container').innerHTML = '';
+    for (let i = 0; i < (CFG.cal_report_default || 1); i++) addCalReport();
+  }
+  function addCalReport() {
+    const max = CFG.cal_report_max || 14;
+    if (document.querySelectorAll('.cal-row').length >= max) return;
+    const row = document.createElement('div');
+    row.className = 'cal-row';
+    row.innerHTML = `<div class="form-group"><label class="cal-title"></label><input type="text" class="cal-report"></div>
+      <button type="button" class="btn-remove" title="Remove" onclick="removeCalReport(this)">✕</button>`;
+    $('cal_container').appendChild(row);
+    renumberCalReports();
+  }
+  function removeCalReport(btn) {
+    if (document.querySelectorAll('.cal-row').length <= 1) { btn.closest('.cal-row').querySelector('input').value = ''; return; }
+    btn.closest('.cal-row').remove();
+    renumberCalReports();
+  }
+  function renumberCalReports() {
+    const rows = document.querySelectorAll('.cal-row'), max = CFG.cal_report_max || 14;
+    rows.forEach((r, i) => { r.querySelector('.cal-title').textContent = `Checkweigher / Weight Scale No.${i + 1}`; });
+    $('cal_count').textContent = `(${rows.length} / ${max})`;
+    $('cal_add_btn').disabled = rows.length >= max;
+    $('cal_add_btn').style.opacity = rows.length >= max ? .5 : 1;
+  }
+
+  // ---------- Additional Service Comments No.x (text + related pictures) ----------
+  function scaleImage(file, maxSide = 1200) {
+    return new Promise((resolve, reject) => {
+      const rd = new FileReader();
+      rd.onerror = reject;
+      rd.onload = e => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const s = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+          const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+          resolve(file.type === 'image/png' ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = e.target.result;
+      };
+      rd.readAsDataURL(file);
+    });
+  }
+  function addServiceComment() {
+    const max = CFG.service_comment_max || 10;
+    if (document.querySelectorAll('.svc-item').length >= max) return;
+    const box = document.createElement('div');
+    box.className = 'card-box sub svc-item';
+    box._pics = [];
+    box.innerHTML = `<button type="button" class="btn-remove" onclick="this.parentElement.remove(); renumberServiceComments()">Remove</button>
+      <div class="svc-title" style="font-weight:bold;color:#008080;font-size:12px;margin-bottom:8px;"></div>
+      <div class="form-group"><label>Comment</label><textarea class="svc-text" rows="3"></textarea></div>
+      <div class="pic-grid"></div>
+      <button type="button" class="btn-add-sm svc-pic-btn" onclick="this.nextElementSibling.click()">+ Add Picture</button>
+      <input type="file" accept="image/*" multiple style="display:none;" onchange="addServicePictures(this)">
+      <span class="count-note svc-pic-count" style="margin-left:6px;"></span>`;
+    $('svc_container').appendChild(box);
+    renumberServiceComments();
+    renderServicePictures(box);
+  }
+  async function addServicePictures(input) {
+    const box = input.closest('.svc-item'), max = CFG.service_picture_max || 6;
+    for (const f of Array.from(input.files)) {
+      if (box._pics.length >= max) { showMessage(`Max. ${max} pictures per service comment.`, 'info'); break; }
+      try { box._pics.push(await scaleImage(f)); } catch (e) { /* skip unreadable file */ }
     }
-    $('cal_container').innerHTML = html;
+    input.value = '';
+    renderServicePictures(box);
+  }
+  function renderServicePictures(box) {
+    const max = CFG.service_picture_max || 6, no = box.dataset.no;
+    box.querySelector('.pic-grid').innerHTML = box._pics.map((src, i) =>
+      `<div class="pic-item"><img src="${src}" alt="Picture ${no}.${i + 1}"><span class="pic-no">Picture ${no}.${i + 1}</span>
+        <button type="button" class="btn-remove" title="Remove picture" onclick="removeServicePicture(this, ${i})">✕</button></div>`).join('');
+    box.querySelector('.svc-pic-count').textContent = `${box._pics.length} / ${max} pictures`;
+    const btn = box.querySelector('.svc-pic-btn');
+    btn.disabled = box._pics.length >= max; btn.style.opacity = btn.disabled ? .5 : 1;
+  }
+  function removeServicePicture(btn, i) { const box = btn.closest('.svc-item'); box._pics.splice(i, 1); renderServicePictures(box); }
+  function renumberServiceComments() {
+    const items = document.querySelectorAll('.svc-item'), max = CFG.service_comment_max || 10;
+    items.forEach((el, i) => { el.dataset.no = i + 1; el.querySelector('.svc-title').textContent = `Additional Service Comments No.${i + 1}`; renderServicePictures(el); });
+    $('svc_count').textContent = `(${items.length} / ${max})`;
+    $('svc_add_btn').disabled = items.length >= max;
+    $('svc_add_btn').style.opacity = items.length >= max ? .5 : 1;
   }
 
   // ---------- Test kit (shared with the CW Calibration form via localStorage) ----------
@@ -457,6 +544,7 @@
     renderOQ();
     addLane();
     renderCalReports();
+    renumberServiceComments();
     loadTestKit();
     renderTestKit();
   }
@@ -518,7 +606,8 @@
       customer_sign_name: v('cs_name'), customer_sign_position: v('cs_position'), customer_sign_phone: v('cs_phone'),
       customer_sign_email: v('cs_email'), customer_sign_date: dmy('cs_date'), customer_signature: customerSigPad.getDataUrl(),
       technician_name: v('tech_name'), technician_date: dmy('tech_date'), technician_signature: technicianSigPad.getDataUrl(),
-      service_comments: v('service_comments')
+      service_comments: v('service_comments'),
+      service_comment_items: Array.from(document.querySelectorAll('.svc-item')).map(el => ({ text: el.querySelector('.svc-text').value, pictures: el._pics.slice() }))
     };
 
     const btn = $('submit_btn'), label = btn.textContent;

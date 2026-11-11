@@ -212,7 +212,11 @@ OQ_OBJECTIVE = ("Demonstrate that basic checkweigher functions perform appropria
                 "Only use certified tachometer with deviation <1%.")
 
 TEST_KIT_DEFAULT = ["Weight kit 200mg–500g", "Weight kit 1kg", "Weight kit 2kg", "Tachometer", "Multimeter"]
-CAL_REPORT_SLOTS = 5
+CAL_REPORT_DEFAULT = 1    # rows shown when the form opens (5.1 Calibration Report Number)
+CAL_REPORT_MAX = 14       # max rows the technician can add
+CAL_REPORT_SLOTS = CAL_REPORT_DEFAULT  # kept for older code paths
+SERVICE_COMMENT_MAX = 10  # "Additional Service Comments No.x"
+SERVICE_PICTURE_MAX = 6   # pictures per service comment
 
 
 def _items(section):
@@ -266,6 +270,11 @@ class TestKitRow(BaseModel):
     due_date: str = ""
 
 
+class ServiceComment(BaseModel):
+    text: str = ""
+    pictures: List[str] = []   # data URLs
+
+
 class CWCQData(BaseModel):
     doc_no: str = ""
     model: str = ""
@@ -305,6 +314,7 @@ class CWCQData(BaseModel):
     technician_date: str = ""
     technician_signature: str = ""
     service_comments: str = ""
+    service_comment_items: List[ServiceComment] = []
 
 
 # ------------------------------------------------------------
@@ -414,12 +424,19 @@ CWCQ_TEMPLATE = """
   .two-col > tbody > tr > td { width: 50%; vertical-align: top; padding: 0 2px; }
   .oiml td, .oiml th { text-align: center; }
   .oiml td.l { text-align: left; }
+  table.checklist-table.oiml th { text-align: center; vertical-align: middle; }  /* section 4 headers centred (Ver. 0.11.1) */
   .note { font-size: 7pt; color: #444; margin: 2px 0 6px; }
   .sig-box img { max-height: 50px; max-width: 90%; }
   .sig-meta { width: 100%; border-collapse: collapse; margin-top: 4px; }
   .sig-meta td { font-size: 7.5pt; padding: 1px 4px; text-align: left; border: none; }
   .sig-meta td.k { width: 30%; font-weight: bold; color: #333; }
   .orig { font-size: 7pt; color: #666; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 4px; }
+  .svc-item { margin-top: 6px; }
+  .svc-item .sub-head { margin-bottom: 2px; }
+  .pic-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  .pic-table td { width: 50%; padding: 3px; vertical-align: top; text-align: center; border: 1px solid #d5e3e3; page-break-inside: avoid; }
+  .pic-table img { max-width: 100%; max-height: 75mm; }
+  .pic-cap { font-size: 7pt; color: #555; margin-top: 2px; }
 </style></head>
 <body>
 
@@ -715,10 +732,19 @@ CWCQ_TEMPLATE = """
       </table></div></td>
   </tr></table>
 </div>
-{% if d.service_comments %}
+{% if d.service_comments or svc_items %}
 <div class="section-block">
   <div class="section-header"><span class="slash" style="color:#fff;">/</span> Additional Service Comments</div>
-  <div class="text-block">{{ d.service_comments }}</div>
+  {% if d.service_comments %}<div class="text-block">{{ d.service_comments }}</div>{% endif %}
+  {% for it in svc_items %}{% set n = loop.index %}
+  <div class="svc-item">
+    <div class="sub-head">Additional Service Comments No.{{ n }}</div>
+    {% if it.text %}<div class="text-block" style="white-space:pre-line;">{{ it.text }}</div>{% endif %}
+    {% if it.pictures %}<table class="pic-table">
+      {% for row in it.pictures|batch(2) %}{% set r = loop.index0 %}<tr>{% for p in row %}<td><img src="{{ p }}" alt="Picture {{ n }}.{{ r * 2 + loop.index }}"><div class="pic-cap">Picture {{ n }}.{{ r * 2 + loop.index }}</div></td>{% endfor %}{% if row|length == 1 %}<td style="border:none;"></td>{% endif %}</tr>{% endfor %}
+    </table>{% endif %}
+  </div>
+  {% endfor %}
 </div>
 {% endif %}
 <div class="orig">{{ original_note }}</div>
@@ -756,6 +782,10 @@ def cwcq_config():
         "oq": [sec(s) for s in OQ_SECTIONS],
         "test_kit_default": TEST_KIT_DEFAULT,
         "cal_report_slots": CAL_REPORT_SLOTS,
+        "cal_report_default": CAL_REPORT_DEFAULT,
+        "cal_report_max": CAL_REPORT_MAX,
+        "service_comment_max": SERVICE_COMMENT_MAX,
+        "service_picture_max": SERVICE_PICTURE_MAX,
     }
 
 
@@ -817,7 +847,12 @@ def _build_cwcq_pdf(data: CWCQData) -> bytes:
         lanes.append({"l": ln.model_dump() if hasattr(ln, "model_dump") else ln.dict(),
                       "min_dev": min_dev, "min_cls": min_cls, "max_dev": max_dev, "max_cls": max_cls})
 
-    cal_reports = (list(data.cal_reports) + [""] * CAL_REPORT_SLOTS)[:CAL_REPORT_SLOTS]
+    cal_reports = list(data.cal_reports)[:CAL_REPORT_MAX] or [""]
+    svc_items = []
+    for it in data.service_comment_items[:SERVICE_COMMENT_MAX]:
+        pics = [p for p in it.pictures if _DATA_URL_RE.match((p or "").strip())][:SERVICE_PICTURE_MAX]
+        if it.text.strip() or pics:
+            svc_items.append({"text": it.text, "pictures": pics})
     if not d["weight_cells"]:
         d["weight_cells"] = [WeightCell().model_dump()]
     if not d["test_kit"]:
@@ -826,7 +861,7 @@ def _build_cwcq_pdf(data: CWCQData) -> bytes:
 
     doc_css = data.doc_no.replace("\\", "").replace('"', "").replace("\n", " ")
     html = Template(CWCQ_TEMPLATE).render(
-        d=d, iq=iq, oq=oq, results=results, lanes=lanes, cal_reports=cal_reports,
+        d=d, iq=iq, oq=oq, results=results, lanes=lanes, cal_reports=cal_reports, svc_items=svc_items,
         sd_rows=SD_ROWS, cls=_cls, introduction=INTRODUCTION, original_note=ORIGINAL_NOTE,
         oq_objective=OQ_OBJECTIVE, doc_css=doc_css, base_css=BASE_CSS,
         logo_top=LOGO_TOP_URI, logo_header=LOGO_HEADER_URI,
