@@ -21,6 +21,12 @@ GTK_BIN = BASE_DIR / "GTK3-Runtime" / "bin"
 
 if GTK_BIN.exists():
     os.environ["WEASYPRINT_DLL_DIRECTORIES"] = str(GTK_BIN)
+    # cffi resolves bare DLL names (e.g. "libgobject-2.0-0") by searching PATH. If another
+    # GTK (e.g. C:\Program Files\GTK3-Runtime Win64\bin) is on PATH, a second copy of
+    # gobject/pango gets loaded next to ours, GObject type registration breaks and
+    # write_pdf() spins forever. Put the portable GTK first so only one copy is used,
+    # also when main.py is started directly instead of via Run_PV.bat.
+    os.environ["PATH"] = str(GTK_BIN) + os.pathsep + os.environ.get("PATH", "")
     if hasattr(os, "add_dll_directory"):
         os.add_dll_directory(str(GTK_BIN))
 
@@ -236,6 +242,24 @@ def to_dict(model) -> dict:
 
 def normalize_keys(d: dict) -> dict:
     return {str(k).strip(): v for k, v in d.items()}
+
+
+def pdf_content_disposition(cert_no: str) -> str:
+    """Build a Content-Disposition header that is always valid.
+
+    HTTP headers must be latin-1, so a Thai or other non-ASCII cert_no used to make
+    the response fail. `filename` gets a safe ASCII fallback; `filename*` (RFC 5987)
+    carries the full UTF-8 name for browsers that support it.
+    """
+    from urllib.parse import quote
+    import re
+
+    name = re.sub(r'[\\/:*?"<>|\r\n\t]+', "-", (cert_no or "").strip())
+    name = re.sub(r"\s+", "_", name).strip("-_.") or "Document"
+    full = f"PV_Certificate_{name}.pdf"
+    ascii_name = re.sub(r"[^A-Za-z0-9._-]", "", name).strip("-_.") or "Document"
+    fallback = f"PV_Certificate_{ascii_name}.pdf"
+    return f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{quote(full, safe='')}"
 
 
 HTML_TEMPLATE = """
@@ -755,7 +779,7 @@ def generate_pdf(data: FullPVData):
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=PV_Certificate_{data.cert_no}.pdf"}
+            headers={"Content-Disposition": pdf_content_disposition(data.cert_no)}
         )
     except Exception as e:
         logger.error(f"PDF generation failed: {e}\n{traceback.format_exc()}")

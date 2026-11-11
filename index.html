@@ -972,7 +972,11 @@
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `PV_Certificate_${payload.cert_no || 'Document'}.pdf`;
+      const safeCert = String(payload.cert_no || '').trim()
+        .replace(/[\\/:*?"<>|\r\n\t]+/g, '-')
+        .replace(/\s+/g, '_')
+        .replace(/^[-_.]+|[-_.]+$/g, '') || 'Document';
+      a.download = `PV_Certificate_${safeCert}.pdf`;
       a.click();
       window.URL.revokeObjectURL(url);
       showMessage('PDF generated successfully', 'info');
