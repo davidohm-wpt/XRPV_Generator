@@ -37,7 +37,22 @@ MODELS = [
     "HC-M-WD-MDi", "HC-M-SL", "HC-M-SL-MDi", "HC-M-WD-SL", "HC-A", "HC-A-MI", "HC-A-VA",
     "HC-A-IS-WD", "HC-A-VI",
 ]
-BUSINESS = ["Food and Pharma (Checkweigher)", "Mail & Logistic (Catchweigher)"]
+BUSINESS = ["Food & Pharma", "Mail & Logistic"]
+
+
+def instrument_category(business: str) -> str:
+    """OIML R 51-1 category for chapter 4: Mail & Logistic -> Y (catchweigher), otherwise X (checkweigher).
+    Also accepts the older names "Food and Pharma (Checkweigher)" / "Mail & Logistic (Catchweigher)"."""
+    return "Y" if (business or "").strip().lower().startswith("mail") else "X"
+
+
+def instruments_title(business: str) -> str:
+    b = (business or "").strip().lower()
+    if b.startswith("food"):
+        return "4. Checkweigher Instruments"
+    if b.startswith("mail"):
+        return "4. Catchweigher Instruments"
+    return "4. Catchweighing / Checkweighing Instruments"
 RESULTS = ["-", "Pass", "Failed", "N/A"]
 SPEED_UNITS = ["m/sec", "m/min"]
 
@@ -254,6 +269,7 @@ class TestKitRow(BaseModel):
 class CWCQData(BaseModel):
     doc_no: str = ""
     model: str = ""
+    model_image: str = ""   # data URL, only when the model is "Other" and a picture was attached
     model_number: str = ""
     serial_no: str = ""
     customer: Party = Party()
@@ -332,6 +348,17 @@ def _model_image_path(model: str):
     for p in MODEL_IMG_DIR.glob(re.sub(r"[^A-Za-z0-9-]", "_", model) + ".*"):
         return p
     return None
+
+
+_DATA_URL_RE = re.compile(r"^data:image/(png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+/=\s]+$")
+
+
+def _cover_image_uri(data) -> str:
+    """Picture for the cover: an attached picture ("Other" model) wins, else the stock model picture."""
+    img = (data.model_image or "").strip()
+    if img and _DATA_URL_RE.match(img):
+        return img
+    return _model_image_uri(data.model)
 
 
 def _model_image_uri(model: str) -> str:
@@ -548,7 +575,52 @@ CWCQ_TEMPLATE = """
 
 {# ======================= 4. INSTRUMENTS ======================= #}
 <div class="chapter">
-<div class="chapter-title"><span class="slash">/</span> 4. Catchweighing / Checkweighing Instruments</div>
+<div class="chapter-title"><span class="slash">/</span> {{ instr_title }}</div>
+{% if cat == "Y" %}
+<div class="section-header"><span class="slash" style="color:#fff;">/</span> 4.1 OIML R 51-1 (Edition 2006) — Category Y Instruments</div>
+
+<div class="section-block">
+  <div class="sub-head">4.1.1 Verification scale interval (OIML R 51-1, clause 2.2.1 and Table 1)</div>
+  <div class="text-block">The verification scale interval (e) and the number of verification scale intervals (n = Max / e) are given per accuracy class in Table 1.</div>
+  <table class="checklist-table oiml">
+    <tr><th rowspan="2">Accuracy class</th><th rowspan="2">Verification scale interval, e</th><th colspan="2">Number of verification scale intervals, n = Max / e</th></tr>
+    <tr><th>Minimum</th><th>Maximum</th></tr>
+    <tr><td>Y(I)</td><td>0.001 g ≤ e *</td><td>50 000</td><td>–</td></tr>
+    <tr><td rowspan="2">Y(II)</td><td>0.001 g ≤ e ≤ 0.05 g</td><td>100</td><td>100 000</td></tr>
+    <tr><td>0.1 g ≤ e</td><td>5 000</td><td>100 000</td></tr>
+    <tr><td rowspan="2">Y(a)</td><td>0.1 g ≤ e ≤ 2 g</td><td>100</td><td>10 000</td></tr>
+    <tr><td>5 g ≤ e</td><td>500</td><td>10 000</td></tr>
+    <tr><td>Y(b)</td><td>5 g ≤ e</td><td>100</td><td>1 000</td></tr>
+  </table>
+  <div class="note">* It is normally not feasible to test and verify an instrument where e &lt; 1 mg, due to the uncertainty of the test loads.<br>
+  Multiple range instruments: e1 &lt; e2 &lt; … &lt; er (Min, n and Max indexed accordingly); each range is treated as an instrument with one range.</div>
+</div>
+
+<div class="section-block">
+  <div class="sub-head">4.1.2 Maximum permissible errors — automatic operation (OIML R 51-1, clause 2.5.1.2 and Table 5)</div>
+  <div class="text-block">The maximum permissible error for any load m with Min ≤ m ≤ Max in automatic operation shall be as specified in Table 5.</div>
+  <table class="checklist-table oiml">
+    <tr><th colspan="4">Load, m, expressed in verification scale intervals, e</th><th colspan="2">Maximum permissible error *</th></tr>
+    <tr><th>Y(I)</th><th>Y(II)</th><th>Y(a)</th><th>Y(b)</th><th>Initial verification</th><th>In-service inspection</th></tr>
+    <tr><td>0 &lt; m ≤ 50 000</td><td>0 &lt; m ≤ 5 000</td><td>0 &lt; m ≤ 500</td><td>0 &lt; m ≤ 50</td><td>±1 e</td><td>±1.5 e</td></tr>
+    <tr><td>50 000 &lt; m ≤ 200 000</td><td>5 000 &lt; m ≤ 20 000</td><td>500 &lt; m ≤ 2 000</td><td>50 &lt; m ≤ 200</td><td>±1.5 e</td><td>±2.5 e</td></tr>
+    <tr><td>200 000 &lt; m</td><td>20 000 &lt; m ≤ 100 000</td><td>2 000 &lt; m ≤ 10 000</td><td>200 &lt; m ≤ 1 000</td><td>±2 e</td><td>±3.5 e</td></tr>
+  </table>
+  <div class="note">* Applies to instruments with a device displaying the digital indication with d ≤ 0.2 e (see A.3.9.2.1); without such a device, the procedure in A.3.9.2.2 applies.<br>
+  If the net weight is calculated by subtracting two individual weighings, the MPEs apply to the individual weighings if they are printed or recorded separately, or to the net weight if only the net weight is printed.</div>
+</div>
+
+<div class="section-block">
+  <div class="sub-head">4.1.3 Number of test weighings (OIML R 51-1, clause 6.1.2 and Table 7)</div>
+  <div class="text-block">Minimum number of consecutive test weighings used to determine the individual errors for Category Y instruments:</div>
+  <table class="checklist-table oiml">
+    <tr><th>Load, m</th><th>Number of test weighings</th></tr>
+    <tr><td class="l">Any load</td><td>Minimum of 10</td></tr>
+  </table>
+  <div class="note">The number of test weighings shall be at least ten unless a special test procedure is specified in the type approval certificate.<br>
+  Source: OIML R 51-1 Edition 2006 (E) — Automatic catchweighing instruments, Part 1: Metrological and technical requirements — Tests. Category Y values only.</div>
+</div>
+{% else %}
 <div class="section-header"><span class="slash" style="color:#fff;">/</span> 4.1 OIML R 51-1 (Edition 2006) — Category X Instruments</div>
 
 <div class="section-block">
@@ -598,6 +670,7 @@ CWCQ_TEMPLATE = """
   </table>
   <div class="note">Source: OIML R 51-1 Edition 2006 (E) — Automatic catchweighing instruments, Part 1: Metrological and technical requirements — Tests. Category X values only.</div>
 </div>
+{% endif %}
 {% if d.instruments_remarks %}
 <div class="section-block">
   <div class="section-header"><span class="slash" style="color:#fff;">/</span> Remarks</div>
@@ -757,6 +830,7 @@ def _build_cwcq_pdf(data: CWCQData) -> bytes:
         sd_rows=SD_ROWS, cls=_cls, introduction=INTRODUCTION, original_note=ORIGINAL_NOTE,
         oq_objective=OQ_OBJECTIVE, doc_css=doc_css, base_css=BASE_CSS,
         logo_top=LOGO_TOP_URI, logo_header=LOGO_HEADER_URI,
-        model_img=_model_image_uri(data.model),
+        model_img=_cover_image_uri(data),
+        cat=instrument_category(data.business), instr_title=instruments_title(data.business),
     )
     return weasyprint.HTML(string=html).write_pdf()
