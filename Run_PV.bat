@@ -35,10 +35,11 @@ if exist "!GIT_EXE!" (
             for /f "delims=" %%L in ('PortableGit\bin\git.exe status --porcelain -uno 2^>nul') do set LOCAL_CHANGES=1
             for /f "delims=" %%B in ('PortableGit\bin\git.exe rev-parse --abbrev-ref HEAD 2^>nul') do set CUR_BRANCH=%%B
             for /f "delims=" %%N in ('PortableGit\bin\git.exe rev-list --count origin/%GITHUB_BRANCH%..HEAD 2^>nul') do set AHEAD=%%N
+            REM Checked from least to most important - the last match is the one shown.
             set SKIP_REASON=
-            if defined LOCAL_CHANGES set SKIP_REASON=there are local file changes that are not committed
-            if not "!CUR_BRANCH!"=="%GITHUB_BRANCH%" set SKIP_REASON=branch "!CUR_BRANCH!" is checked out, not %GITHUB_BRANCH%
             if not "!AHEAD!"=="0" set SKIP_REASON=there are !AHEAD! local commit[s] not pushed to GitHub yet
+            if not "!CUR_BRANCH!"=="%GITHUB_BRANCH%" set SKIP_REASON=branch "!CUR_BRANCH!" is checked out, not %GITHUB_BRANCH%
+            if defined LOCAL_CHANGES set SKIP_REASON=there are local file changes that are not committed
             if defined SKIP_REASON (
                 echo [Update skipped] !SKIP_REASON!.
                 echo                  Using local files so your work is not overwritten.
