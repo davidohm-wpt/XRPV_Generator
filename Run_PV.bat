@@ -21,16 +21,35 @@ if exist "!GIT_EXE!" (
 
     if exist "%~dp0.git" (
         :: มี .git อยู่แล้ว → pull (ดึงเฉพาะที่เปลี่ยน)
+        :: Safety: "reset --hard" would silently wipe local work, so the update is
+        :: skipped when there are uncommitted edits, unpushed commits, or another
+        :: branch is checked out (e.g. while testing a fix before pushing it).
         pushd "%~dp0"
         "!GIT_EXE!" fetch origin !GITHUB_BRANCH! >nul 2>&1
         if !errorlevel! neq 0 (
             echo [Warning] Cannot reach GitHub - using local files.
         ) else (
-            "!GIT_EXE!" reset --hard origin/!GITHUB_BRANCH! >nul 2>&1
-            if !errorlevel! neq 0 (
-                echo [Warning] git reset failed - using local files.
+            set LOCAL_CHANGES=
+            set CUR_BRANCH=
+            set AHEAD=0
+            for /f "delims=" %%L in ('PortableGit\bin\git.exe status --porcelain -uno 2^>nul') do set LOCAL_CHANGES=1
+            for /f "delims=" %%B in ('PortableGit\bin\git.exe rev-parse --abbrev-ref HEAD 2^>nul') do set CUR_BRANCH=%%B
+            for /f "delims=" %%N in ('PortableGit\bin\git.exe rev-list --count origin/%GITHUB_BRANCH%..HEAD 2^>nul') do set AHEAD=%%N
+            set SKIP_REASON=
+            if defined LOCAL_CHANGES set SKIP_REASON=there are local file changes that are not committed
+            if not "!CUR_BRANCH!"=="%GITHUB_BRANCH%" set SKIP_REASON=branch "!CUR_BRANCH!" is checked out, not %GITHUB_BRANCH%
+            if not "!AHEAD!"=="0" set SKIP_REASON=there are !AHEAD! local commit[s] not pushed to GitHub yet
+            if defined SKIP_REASON (
+                echo [Update skipped] !SKIP_REASON!.
+                echo                  Using local files so your work is not overwritten.
+                echo                  Push your work - or discard it - to get updates again.
             ) else (
-                echo Update completed.
+                "!GIT_EXE!" reset --hard origin/!GITHUB_BRANCH! >nul 2>&1
+                if !errorlevel! neq 0 (
+                    echo [Warning] git reset failed - using local files.
+                ) else (
+                    echo Update completed.
+                )
             )
         )
         popd
