@@ -104,3 +104,6 @@ _backup_v1.4.1/
 
 # Maintainer helper (not for the team)
 Make_NewPC_Pack.bat
+
+# Source templates used to design forms (kept local, not pushed)
+_reference/
