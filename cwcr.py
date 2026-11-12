@@ -1,6 +1,7 @@
 """CWCR - Checkweigher Calibration Report: calculation engine, PDF template and routes.
 
-Merged into the XRPV Generator server from the standalone CWCR project (v1.0.6.2).
+Merged into the XRPV Generator server from the standalone CWCR project (v1.0.6.2);
+updated to CWCR v1.2 (Mail & Logistic / Catchweigher mode) from the "CW Cal Report (PV)" chat.
 The page is served at /cwcr.html and the PDF endpoint is /cwcr/generate-pdf.
 """
 import logging
@@ -18,7 +19,7 @@ from assets import LOGO_HEADER_URI, BASE_CSS, content_disposition
 router = APIRouter()
 logger = logging.getLogger("cwcr")
 CWCR_HTML_PATH = Path(__file__).resolve().parent / "cwcr.html"
-CWCR_VERSION = "1.0.6.2"
+CWCR_VERSION = "1.2"
 
 
 @router.get("/cwcr.html")
@@ -78,12 +79,13 @@ def eval_load_test(test_load, reading, e_value, measuring_range):
         return {"error": None, "result": None}
     wc_class = classify(measuring_range)
     error = reading - test_load
+    eps = 1e-9  # v1.2: floating-point guard, same as the frontend
     if test_load == 0:
-        return {"error": error, "result": "PASS" if abs(error) <= e_value else "FAIL"}
+        return {"error": error, "result": "PASS" if abs(error) <= e_value + eps else "FAIL"}
     mult = e_multiplier(test_load, wc_class)
     if mult is None:
         return {"error": error, "result": "FAIL"}
-    return {"error": error, "result": "PASS" if abs(error) <= mult * e_value else "FAIL"}
+    return {"error": error, "result": "PASS" if abs(error) <= mult * e_value + eps else "FAIL"}
 
 
 def fmt_num(v, decimals=None):
@@ -165,7 +167,7 @@ HTML_TEMPLATE = r"""
   <table class="header-table">
     <tr>
       <td class="company-info" style="width: 70%; vertical-align: top;">
-        <div class="company-name">WIPOTEC Checkweigher Calibration Report</div>
+        <div class="company-name">WIPOTEC {{ machine_word }} Calibration Report</div>
         <div>Document No.: <strong>{{ m.documentNo or '—' }}</strong></div>
       </td>
       <td class="logo-cell" style="width: 30%;">
@@ -193,6 +195,7 @@ HTML_TEMPLATE = r"""
       <tr><td class="label-col">Software Version</td><td class="val-col">{{ m.softwareVersion or '—' }}</td><td class="label-col">Model No.</td><td class="val-col">{{ m.modelNumber or '—' }}</td></tr>
       <tr><td class="label-col">Manufacturing Year</td><td class="val-col">{{ m.manufacturingYear or '—' }}</td><td class="label-col">Customer Asset No. / Location</td><td class="val-col">{{ m.location or '—' }}</td></tr>
       <tr><td class="label-col">Measuring Range</td><td class="val-col">{{ m.measuringRange or '—' }} {{ m.unit or '' }}</td><td class="label-col">Display Value</td><td class="val-col">{{ m.displayValue or '—' }} {{ m.unit or '' }}</td></tr>
+      <tr><td class="label-col">Business</td><td class="val-col">{{ business_label }}</td><td class="label-col">Legal for Trade</td><td class="val-col">{{ m.legalForTrade or '—' }}</td></tr>
     </table>
   </div>
 
@@ -233,7 +236,9 @@ HTML_TEMPLATE = r"""
   </div>
 
   {% for lane in lanes %}
-  <div class="lane-title">{% if lanes|length > 1 %}Lane {{ lane.laneNo }} — {% endif %}Transportation Check List &amp; Weight Testing</div>
+  <div class="lane-title">{% if lanes|length > 1 %}{{ unit_word }} {{ lane.laneNo }} — {% endif %}{% if lane.has_conveyor %}Transportation Check List &amp; Weight Testing{% else %}Product Dynamic Test / Spot Check{% endif %}</div>
+
+  {% if lane.has_conveyor %}
 
   <div class="section-block">
     <div class="section-header"><span class="slash" style="color:#fff;">/</span> Weigh Cell Info</div>
@@ -279,15 +284,18 @@ HTML_TEMPLATE = r"""
     <div class="section-header"><span class="slash" style="color:#fff;">/</span> Repeatability Test</div>
     {{ load_table(lane.cw.repeatability_rows) }}
   </div>
+  {% endif %}
 
-  {% if lane.cw.dynamicTests %}
+  {% if lane.has_scale and lane.cw.dynamicTests %}
   <div class="section-block">
     <div class="section-header"><span class="slash" style="color:#fff;">/</span> Product Dynamic Test / Spot Check</div>
     {% for d in lane.cw.dynamicTests %}
     <div class="product-card">
       <table class="data-table" style="margin-bottom: 3px;">
         <tr><td class="label-col" style="width:18%">Article Name</td><td class="val-col" style="width:32%"><strong>{{ d.articleName or '—' }}</strong></td><td class="label-col" style="width:18%">Article Number</td><td class="val-col" style="width:32%">{{ d.articleNumber or '—' }}</td></tr>
+        {% if not is_mail %}
         <tr><td class="label-col">Dimension (L×W×H mm)</td><td class="val-col">{{ d.length or '—' }} × {{ d.width or '—' }} × {{ d.height or '—' }}</td><td class="label-col">Filter Frequency</td><td class="val-col">{{ d.filterFrequency or '—' }} Hz</td></tr>
+        {% endif %}
         <tr><td class="label-col">Speed</td><td class="val-col">{{ d.speedValue or '—' }} {{ d.speedType or '' }}</td><td class="label-col">Quantity Test</td><td class="val-col">{{ d.qtyTest or '—' }}</td></tr>
         <tr><td class="label-col">Product Weight</td><td class="val-col">{{ d.productWeight or '—' }} {{ m.unit or '' }}</td><td class="label-col">Mean Value</td><td class="val-col">{{ d.meanValue or '—' }} {{ m.unit or '' }}</td></tr>
         <tr><td class="label-col">Standard Deviation</td><td class="val-col" colspan="3">{{ d.stdDeviation or '—' }} {{ m.unit or '' }}</td></tr>
@@ -299,12 +307,12 @@ HTML_TEMPLATE = r"""
 
   <div class="section-block">
     <table class="data-table">
-      <tr><td class="label-col">{% if lanes|length > 1 %}Lane {{ lane.laneNo }} {% endif %}Operate in Good Condition</td>
+      <tr><td class="label-col">{% if lanes|length > 1 %}{{ unit_word }} {{ lane.laneNo }} {% endif %}Operate in Good Condition</td>
           <td class="val-col {% if lane.cw.operateGoodCondition == 'Yes' %}good-text{% elif lane.cw.operateGoodCondition == 'No' %}bad-text{% endif %}"><strong>{{ lane.cw.operateGoodCondition or '—' }}</strong></td></tr>
     </table>
   </div>
 
-  {% if lane.md %}
+  {% if lane.md and not is_mail %}
   <div class="lane-title">{% if lanes|length > 1 %}Lane {{ lane.laneNo }} — {% endif %}Metal Detector Check List &amp; Testing</div>
   <div class="section-block">
     <div class="section-header"><span class="slash" style="color:#fff;">/</span> Metal Detector Info</div>
@@ -404,16 +412,24 @@ HTML_TEMPLATE = r"""
   </div>
 
   <div class="footer-text">
-    <strong>CWCR — Checkweigher Calibration Report.</strong> Generated by the WIPOTEC Calibration Report Generator.
+    <strong>CWCR — {{ machine_word }} Calibration Report.</strong> Generated by the WIPOTEC Calibration Report Generator.
   </div>
 </body>
 </html>
 """
 
 
+BUSINESS_LABELS = {
+    "food": "Food & Pharma (Checkweigher) — Class X",
+    "mail": "Mail & Logistic (Catchweigher) — Class Y",
+}
+
+
 def build_pdf_context(payload: dict) -> dict:
     m = dict(payload.get("mainInfo") or {})
     decimals = m.get("decimal")
+    business = (payload.get("config") or {}).get("business") or "food"
+    is_mail = business == "mail"
     lanes_in = payload.get("lanes") or []
     lanes_out = []
     for lane in lanes_in:
@@ -462,7 +478,11 @@ def build_pdf_context(payload: dict) -> dict:
         lanes_out.append({
             "laneNo": lane.get("laneNo"),
             "cw": cw,
-            "md": md,
+            "md": None if is_mail else md,
+            # Catchweigher (v1.2): a scale may carry only the conveyor set or only
+            # the spot check; Checkweigher lanes always carry both.
+            "has_conveyor": True if not is_mail else lane.get("hasConveyor", True) is not False,
+            "has_scale": True if not is_mail else lane.get("hasScale", True) is not False,
         })
 
     fr = dict(payload.get("finalReview") or {})
@@ -479,6 +499,10 @@ def build_pdf_context(payload: dict) -> dict:
         "optional_checklist": m.get("optionalChecklist") or [],
         "lanes": lanes_out,
         "fr": fr,
+        "is_mail": is_mail,
+        "unit_word": "Scale" if is_mail else "Lane",
+        "machine_word": "Catchweigher" if is_mail else "Checkweigher",
+        "business_label": BUSINESS_LABELS.get(business, BUSINESS_LABELS["food"]),
     }
 
 

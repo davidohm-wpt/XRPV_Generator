@@ -151,11 +151,11 @@
       <div class="brand-mark">WT</div>
       <div class="brand-text">
         <h1>CWCR</h1>
-        <p>WIPOTEC Checkweigher &amp; Metal Detector Commissioning</p>
+        <p id="headerSubtitle">WIPOTEC Checkweigher &amp; Metal Detector Commissioning</p>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:16px;">
-      <span id="versionBadge" style="font-size:11px; font-weight:700; color:var(--teal-dark); background:var(--teal-tint); border-radius:5px; padding:3px 9px;">v1.0.6.2</span>
+      <span id="versionBadge" style="font-size:11px; font-weight:700; color:var(--teal-dark); background:var(--teal-tint); border-radius:5px; padding:3px 9px;">v1.2</span>
       <div class="doc-no">Document No.<br><span id="docNoDisplay">—</span></div>
     </div>
   </div>
@@ -338,7 +338,22 @@
      alongside it, so "Generate" now produces an actual PDF file
      instead of being a label-only placeholder. Version number is
      now read live from the backend's VERSION.txt via GET /version.
-   ============================================================ */
+   ============================================================ 
+   v1.2 — Business type added as the first choice on Document Setup:
+     1. Food & Pharma (Checkweigher), Class X per OIML R51-1 — unchanged
+        pattern (Number of Lanes + MDi Yes/No).
+     2. Mail & Logistic (Catchweigher), Class Y — Number of Conveyor +
+        Number of Scale, no MDi (no Metal Detector steps or PDF pages).
+        Steps are grouped per Scale: Scale i gets the conveyor set (Weigh
+        Cell Info, Transportation System Check List, Linearity,
+        Eccentricity, Repeatability) when i <= conveyors, and the Product
+        Dynamic Test / Spot Check when i <= scales. "Lane" wording becomes
+        "Scale". Spot Check drops Product Dimension, Filter Frequency and
+        the Pcs/min speed type.
+     Legal for Trade (Yes/No) added to Machine Info for both businesses.
+     Tolerance engine unchanged (XIII/XII by Measuring Range) for both,
+     plus a floating-point guard so a reading exactly on the limit passes.
+   */
 
 /* ============================================================
    DATA MODEL
@@ -358,11 +373,11 @@ function newExtraType(){ return { type:"", id:"", size:"", front:"N/A", middle:"
 function makeTestKitRow(equipment){ return { equipment: equipment||"", serial:"", cert:"", calDate:"", dueDate:"" }; }
 
 const state = {
-  config: { laneCount: 1, hasMDi: null },
+  config: { business: null, laneCount: 1, hasMDi: null, conveyorCount: 1, scaleCount: 1 },
   mainInfo: {
     documentNo:"", companyName:"", address:"", country:"", zipCode:"",
     pocName:"", pocPhone:"", pocEmail:"",
-    modelNumber:"", machineModelType:"", location:"", machineSerial:"", softwareVersion:"", manufacturingYear:"",
+    modelNumber:"", machineModelType:"", location:"", machineSerial:"", softwareVersion:"", manufacturingYear:"", legalForTrade:null,
     measuringRange:1500, displayValue:0.1, decimal:1, unit:"g",
     eValue:0.2, deadLoad:4000,
     testKitRows: [
@@ -416,7 +431,7 @@ function makeCW(){
   };
 }
 function makeDynamicTest(){
-  return { articleName:"", articleNumber:"", length:"", width:"", height:"", filterFrequency:"", speedValue:"", speedType:"Pcs/min", qtyTest:"", productWeight:"", meanValue:"", stdDeviation:"" };
+  return { articleName:"", articleNumber:"", length:"", width:"", height:"", filterFrequency:"", speedValue:"", speedType: isMail() ? "m/sec" : "Pcs/min", qtyTest:"", productWeight:"", meanValue:"", stdDeviation:"" };
 }
 function makeArticle(){
   return {
@@ -441,14 +456,44 @@ function makeMD(){
   };
 }
 
+/* ---- Business type (v1.2) ----
+   "food" = Food & Pharma (Checkweigher), Class X per OIML R51-1 — original pattern:
+            one step per lane, optional MDi.
+   "mail" = Mail & Logistic (Catchweigher), Class Y — no MDi at all.
+            state.lanes holds one entry per SCALE: max(conveyorCount, scaleCount).
+            Scale i carries the conveyor set (Weigh Cell Info, Transportation
+            System Check List, Linearity, Eccentricity, Repeatability) when
+            i <= conveyorCount, and the Product Dynamic Test / Spot Check when
+            i <= scaleCount. */
+const MAX_LANES = 6, MAX_CONVEYORS = 6, MAX_SCALES = 10;
+const BUSINESS_LABELS = { food:"Food & Pharma (Checkweigher)", mail:"Mail & Logistic (Catchweigher)" };
+function isMail(){ return state.config.business === "mail"; }
+function unitWord(){ return isMail() ? "Scale" : "Lane"; }
+function setupComplete(){
+  if (state.config.business === "mail") return true;
+  if (state.config.business === "food") return state.config.hasMDi !== null;
+  return false;
+}
+
 function rebuildLanes(){
-  const n = state.config.laneCount;
+  const mail = isMail();
+  if (mail) state.config.hasMDi = false;
+  const n = mail ? Math.max(state.config.conveyorCount, state.config.scaleCount) : state.config.laneCount;
   const existing = state.lanes;
   const lanes = [];
   for (let i=0;i<n;i++){
     lanes.push(existing[i] || { laneNo:i+1, cw: makeCW(), md: state.config.hasMDi ? makeMD() : null });
   }
-  lanes.forEach(l => { if (state.config.hasMDi && !l.md) l.md = makeMD(); if (!state.config.hasMDi) l.md = null; });
+  lanes.forEach((l, i) => {
+    if (state.config.hasMDi && !l.md) l.md = makeMD();
+    if (!state.config.hasMDi) l.md = null;
+    l.hasConveyor = mail ? i < state.config.conveyorCount : true;
+    l.hasScale    = mail ? i < state.config.scaleCount    : true;
+    // Catchweigher has no Pcs/min speed type
+    l.cw.dynamicTests.forEach(d => {
+      if (mail && d.speedType === "Pcs/min") d.speedType = "m/sec";
+    });
+  });
   state.lanes = lanes;
 }
 
@@ -473,12 +518,13 @@ function evalLoadTest(testLoad, reading, main){
   if (reading===null||reading===""||isNaN(reading)||testLoad===null||testLoad===""||isNaN(testLoad)) return {error:null, result:null};
   const wcClass = classify(main.measuringRange);
   const error = Number(reading) - Number(testLoad);
+  const EPS = 1e-9;   // v1.2: floating-point guard — e.g. 59.98-60 = -0.020000000000003 must still equal 1e
   if (Number(testLoad) === 0){
-    return { error, result: Math.abs(error) <= main.eValue ? "PASS" : "FAIL" };
+    return { error, result: Math.abs(error) <= Number(main.eValue) + EPS ? "PASS" : "FAIL" };
   }
   const mult = eMultiplier(Number(testLoad), wcClass);
   if (mult === null) return { error, result:"FAIL" };
-  return { error, result: Math.abs(error) <= mult*main.eValue ? "PASS" : "FAIL" };
+  return { error, result: Math.abs(error) <= mult*Number(main.eValue) + EPS ? "PASS" : "FAIL" };
 }
 function fmt(v, decimals){
   if (v===null || v===undefined || v==="" || isNaN(v)) return "—";
@@ -783,10 +829,12 @@ let currentStepIndex = 0;
 
 function computeSteps(){
   const steps = [{ key:"config", label:"Document Setup" }];
-  if (state.config.hasMDi === null) return steps;
+  if (!setupComplete()) return steps;
   steps.push({ key:"main", label:"Customer Info, Machine Info & System Check List" });
   state.lanes.forEach((lane, i) => {
-    const laneLabel = state.lanes.length > 1 ? `Lane ${lane.laneNo} Transportation Check List & Weight Testing` : "Transportation Check List & Weight Testing";
+    const w = unitWord();
+    let laneLabel = state.lanes.length > 1 ? `${w} ${lane.laneNo} Transportation Check List & Weight Testing` : "Transportation Check List & Weight Testing";
+    if (isMail() && !lane.hasConveyor) laneLabel = state.lanes.length > 1 ? `${w} ${lane.laneNo} Product Dynamic Test / Spot Check` : "Product Dynamic Test / Spot Check";
     steps.push({ key:`cw-${i}`, label:laneLabel });
     if (lane.md){
       const mdLabel = state.lanes.length > 1 ? `Lane ${lane.laneNo} Metal Detector Check List & Testing` : "Metal Detector Check List & Testing";
@@ -815,25 +863,26 @@ function renderStepper(){
   });
 }
 
-/* ---- Step: Machine Configuration ---- */
+/* ---- Step: Document Setup ---- */
+function counterHTML(title, id, value){
+  return `<div class="config-block">
+        <h3>${title}</h3>
+        <div class="lane-stepper">
+          <button id="${id}Minus">−</button>
+          <div class="lane-count">${value}</div>
+          <button id="${id}Plus">+</button>
+        </div>
+      </div>`;
+}
 function renderConfigStep(){
   const wrap = document.createElement("div");
   wrap.className = "card";
-  wrap.innerHTML = `
-    <h2>Document Setup</h2>
-    <p class="sub">Choose the number of transportation lanes, then whether a Metal Detector (MDi) is integrated. The step list below updates automatically.</p>
-    <div class="field-grid cols-2" style="margin-bottom:20px;">
-      ${fieldHTML("Document No.", "mainInfo.documentNo", state.mainInfo.documentNo)}
-    </div>
+  const b = state.config.business;
+  let detail = "";
+  if (b === "food"){
+    detail = `
     <div class="config-row">
-      <div class="config-block">
-        <h3>Number of Lanes</h3>
-        <div class="lane-stepper">
-          <button id="laneMinus">−</button>
-          <div class="lane-count" id="laneCountDisplay">${state.config.laneCount}</div>
-          <button id="lanePlus">+</button>
-        </div>
-      </div>
+      ${counterHTML("Number of Lanes", "lane", state.config.laneCount)}
       <div class="config-block">
         <h3>Metal Detector Integrated (MDi)?</h3>
         <div class="toggle-row">
@@ -841,20 +890,68 @@ function renderConfigStep(){
           <div class="toggle-btn ${state.config.hasMDi===false?'selected':''}" id="mdiNo">No</div>
         </div>
       </div>
+    </div>`;
+  } else if (b === "mail"){
+    detail = `
+    <div class="config-row">
+      ${counterHTML("Number of Conveyor", "conv", state.config.conveyorCount)}
+      ${counterHTML("Number of Scale", "scale", state.config.scaleCount)}
     </div>
+    <p class="guide-note">Conveyor count sets how many Weigh Cell Info / Transportation System Check List / Linearity / Eccentricity / Repeatability sets are made; Scale count sets how many Product Dynamic Test / Spot Check sets are made. Each set is grouped under its Scale No.</p>`;
+  }
+  wrap.innerHTML = `
+    <h2>Document Setup</h2>
+    <p class="sub">First choose the business type. The remaining options and the step list below update automatically.</p>
+    <div class="config-block" style="margin-bottom:20px;">
+      <h3>Business</h3>
+      <div class="toggle-row" style="max-width:620px;">
+        <div class="toggle-btn ${b==='food'?'selected':''}" id="bizFood">1. ${BUSINESS_LABELS.food}</div>
+        <div class="toggle-btn ${b==='mail'?'selected':''}" id="bizMail">2. ${BUSINESS_LABELS.mail}</div>
+      </div>
+    </div>
+    <div class="field-grid cols-2" style="margin-bottom:20px;">
+      ${fieldHTML("Document No.", "mainInfo.documentNo", state.mainInfo.documentNo)}
+    </div>
+    ${detail}
     <div class="config-summary" id="configSummary"></div>
   `;
   function updateSummary(){
     const s = wrap.querySelector("#configSummary");
-    if (state.config.hasMDi === null){ s.textContent = "Select Yes or No for Metal Detector integration to continue."; return; }
+    if (!b){ s.textContent = "Select a business type to continue."; return; }
+    if (b === "food" && state.config.hasMDi === null){ s.textContent = "Select Yes or No for Metal Detector integration to continue."; return; }
     const parts = [];
-    for (let i=1;i<=state.config.laneCount;i++) parts.push(state.config.laneCount>1 ? `Lane ${i} Transportation${state.config.hasMDi ? " + Metal Detector" : ""}` : `Transportation${state.config.hasMDi ? " + Metal Detector" : ""}`);
+    if (b === "food"){
+      for (let i=1;i<=state.config.laneCount;i++) parts.push(state.config.laneCount>1 ? `Lane ${i} Transportation${state.config.hasMDi ? " + Metal Detector" : ""}` : `Transportation${state.config.hasMDi ? " + Metal Detector" : ""}`);
+    } else {
+      const multi = state.lanes.length > 1;
+      state.lanes.forEach(l => {
+        const what = l.hasConveyor && l.hasScale ? "Weight Testing + Spot Check" : (l.hasConveyor ? "Weight Testing" : "Spot Check");
+        parts.push(multi ? `Scale ${l.laneNo} ${what}` : what);
+      });
+    }
     s.textContent = "Steps generated: Customer/Machine Info → " + parts.join(" → ") + " → Summary";
   }
-  wrap.querySelector("#laneMinus").onclick = () => { state.config.laneCount = Math.max(1, state.config.laneCount-1); rebuildLanes(); renderStepBody(); };
-  wrap.querySelector("#lanePlus").onclick = () => { state.config.laneCount = Math.min(6, state.config.laneCount+1); rebuildLanes(); renderStepBody(); };
-  wrap.querySelector("#mdiYes").onclick = () => { state.config.hasMDi = true; rebuildLanes(); renderStepBody(); };
-  wrap.querySelector("#mdiNo").onclick = () => { state.config.hasMDi = false; rebuildLanes(); renderStepBody(); };
+  function setBusiness(v){
+    if (state.config.business === v) return;
+    state.config.business = v;
+    state.config.hasMDi = (v === "mail") ? false : null;
+    state.lanes = [];            // different structure per business — start the lanes fresh
+    rebuildLanes(); render();
+  }
+  wrap.querySelector("#bizFood").onclick = () => setBusiness("food");
+  wrap.querySelector("#bizMail").onclick = () => setBusiness("mail");
+  function wireCounter(id, key, max){
+    const minus = wrap.querySelector(`#${id}Minus`), plus = wrap.querySelector(`#${id}Plus`);
+    if (!minus) return;
+    minus.onclick = () => { state.config[key] = Math.max(1, state.config[key]-1); rebuildLanes(); renderStepBody(); };
+    plus.onclick  = () => { state.config[key] = Math.min(max, state.config[key]+1); rebuildLanes(); renderStepBody(); };
+  }
+  wireCounter("lane", "laneCount", MAX_LANES);
+  wireCounter("conv", "conveyorCount", MAX_CONVEYORS);
+  wireCounter("scale", "scaleCount", MAX_SCALES);
+  const mY = wrap.querySelector("#mdiYes"), mN = wrap.querySelector("#mdiNo");
+  if (mY) mY.onclick = () => { state.config.hasMDi = true; rebuildLanes(); renderStepBody(); };
+  if (mN) mN.onclick = () => { state.config.hasMDi = false; rebuildLanes(); renderStepBody(); };
   updateSummary();
   bindFields(wrap, () => state);
   const docNoInput = wrap.querySelector("#f_mainInfo_documentNo");
@@ -895,6 +992,13 @@ function renderMainPage(){
         ${fieldHTML("Manufacturing Year", "manufacturingYear", m.manufacturingYear)}
         ${fieldHTML("Customer Asset No. / Location", "location", m.location)}
       </div>
+      <div class="field" style="margin-top:14px; max-width:280px;">
+        <label>Legal for Trade</label>
+        <div class="toggle-row" id="lftToggle">
+          <div class="toggle-btn ${m.legalForTrade==='Yes'?'selected':''}" data-val="Yes">Yes</div>
+          <div class="toggle-btn ${m.legalForTrade==='No'?'selected':''}" data-val="No">No</div>
+        </div>
+      </div>
       <h3 class="subhead">Weight Info</h3>
       <div class="field-grid cols-2">
         ${fieldHTML("Measuring Range", "measuringRange", m.measuringRange, {type:"number", required:true})}
@@ -904,7 +1008,7 @@ function renderMainPage(){
         ${fieldHTML("Decimal Place", "decimal", m.decimal, {type:"number"})}
         ${fieldHTML("Unit", "unit", m.unit, {type:"select", options:["g","kg"]})}
       </div>
-      <p class="guide-note">Decimal Place and Unit are used only to calculate and format weight values shown elsewhere in the report — they are not printed on the generated file. Weighing cell class is derived automatically from Measuring Range (≤10,000 → Class XIII, &gt;10,000 → Class XII).</p>
+      <p class="guide-note">Decimal Place and Unit are used only to calculate and format weight values shown elsewhere in the report — they are not printed on the generated file. ${isMail() ? "Business: Mail &amp; Logistic (Catchweigher), Class Y." : "Business: Food &amp; Pharma (Checkweigher), Class X per OIML R51-1."} Weighing cell class is derived automatically from Measuring Range (≤10,000 → Class XIII, &gt;10,000 → Class XII).</p>
     </div>
 
     <div class="card">
@@ -915,6 +1019,12 @@ function renderMainPage(){
     </div>
   `;
 
+  wrap.querySelector("#lftToggle").querySelectorAll("[data-val]").forEach(btn => {
+    btn.onclick = () => {
+      m.legalForTrade = btn.dataset.val;
+      wrap.querySelectorAll("#lftToggle .toggle-btn").forEach(x => x.classList.toggle("selected", x === btn));
+    };
+  });
   wrap.querySelector("#systemChecklistHost").appendChild(renderChecklistTable(m.systemChecklist));
   wrap.querySelector("#additionalSystemHost").appendChild(
     renderAddCountSection("Additional System Checklist", "e.g. Extra conveyor, cover guard see in WO", m.additionalSystemChecklist)
@@ -934,13 +1044,19 @@ function renderCWPage(laneIndex){
   const main = state.mainInfo;
   const wrap = document.createElement("div");
   const singleLane = state.lanes.length <= 1;
-  const laneTitle = singleLane ? "" : `Lane ${lane.laneNo} — `;
-  const checklistTitle = singleLane ? "Transportation System Check List" : `Transportation Lane No. ${lane.laneNo} System Check List`;
-  const operateTitle = singleLane ? "Operate in Good Condition" : `Lane ${lane.laneNo} Operate in Good Condition`;
+  const W = unitWord();
+  const mail = isMail();
+  const showConveyor = !mail || lane.hasConveyor;
+  const showDynamic  = !mail || lane.hasScale;
+  const laneTitle = singleLane ? "" : `${W} ${lane.laneNo} — `;
+  const checklistTitle = singleLane ? "Transportation System Check List" : `Transportation ${W} No. ${lane.laneNo} System Check List`;
+  const operateTitle = singleLane ? "Operate in Good Condition" : `${W} ${lane.laneNo} Operate in Good Condition`;
+  const pageTitle = showConveyor ? "Transportation Check List &amp; Weight Testing" : "Product Dynamic Test / Spot Check";
+  const speedTypes = mail ? ["m/sec","m/min"] : ["Pcs/min","m/sec","m/min"];
 
   wrap.innerHTML = `
-    <div class="callout"><div>🧭</div><div><b>${laneTitle}Transportation Check List &amp; Weight Testing</b> Tolerances follow the weighing class derived from Measuring Range (e = ${main.eValue} ${main.unit}).</div></div>
-
+    <div class="callout"><div>🧭</div><div><b>${laneTitle}${pageTitle}</b> ${showConveyor ? `Tolerances follow the weighing class derived from Measuring Range (e = ${main.eValue} ${main.unit}).` : `This scale has no conveyor set (Number of Conveyor = ${state.config.conveyorCount}), so only the Spot Check is recorded here.`}</div></div>
+    ${showConveyor ? `
     <div class="card">
       <h2><span class="section-tag">W/C</span> Weigh Cell Info</h2>
       <div class="field-grid">
@@ -995,7 +1111,8 @@ function renderCWPage(laneIndex){
         <span class="cap-note">Maximum ${MAX_REPEAT_SETS} sets (${MAX_REPEAT_SETS*2} tests)</span>
       </div>
     </div>
-
+    ` : ""}
+    ${showDynamic ? `
     <div class="card">
       <h2><span class="section-tag">⚡</span> Product Dynamic Test / Spot Check</h2>
       <div id="dynamicHost"></div>
@@ -1005,7 +1122,7 @@ function renderCWPage(laneIndex){
         <span class="cap-note">Maximum ${MAX_PRODUCTS} products</span>
       </div>
     </div>
-
+    ` : ""}
     <div class="card">
       <h2><span class="section-tag">✔</span> ${operateTitle}</h2>
       <div class="toggle-row" style="max-width:280px;" id="operateToggle">
@@ -1019,6 +1136,8 @@ function renderCWPage(laneIndex){
     btn.onclick = () => { cw.operateGoodCondition = btn.dataset.val; renderStepBody(); };
   });
 
+  let eccHandle = null, repHandle = null;
+  if (showConveyor){
   wrap.querySelector("#cwChecklistHost").appendChild(renderChecklistTable(cw.checklist));
   wrap.querySelector("#cwAdditionalHost").appendChild(
     renderAddCountSection("Additional System Checklist", "e.g. Bin Full sensor, Product flow control see in WO", cw.additionalChecklist)
@@ -1029,16 +1148,18 @@ function renderCWPage(laneIndex){
   wrap.querySelector("#linAdd").onclick = () => { cw.linearity.rows.push(makeLoadRow(0)); renderStepBody(); };
   wrap.querySelector("#linRemove").onclick = () => { if (cw.linearity.rows.length>1) cw.linearity.rows.pop(); renderStepBody(); };
 
-  const eccHandle = buildLoadTable(cw.eccentricity.rows, ()=>cw.eccentricity.testLoad, ()=>state.mainInfo.decimal, main, {posLabel:"Position"});
+  eccHandle = buildLoadTable(cw.eccentricity.rows, ()=>cw.eccentricity.testLoad, ()=>state.mainInfo.decimal, main, {posLabel:"Position"});
   wrap.querySelector("#eccentricityHost").appendChild(eccHandle.el);
 
-  const repHandle = buildLoadTable(cw.repeatability.rows, (row,i)=> i%2===0 ? 0 : cw.repeatability.testLoad, ()=>state.mainInfo.decimal, main, {posLabel:"Test No.", labelFn:(row,i)=> i%2===0 ? (Math.floor(i/2)+1) : ""});
+  repHandle = buildLoadTable(cw.repeatability.rows, (row,i)=> i%2===0 ? 0 : cw.repeatability.testLoad, ()=>state.mainInfo.decimal, main, {posLabel:"Test No.", labelFn:(row,i)=> i%2===0 ? (Math.floor(i/2)+1) : ""});
   wrap.querySelector("#repeatabilityHost").appendChild(repHandle.el);
   wrap.querySelector("#repAdd").onclick = () => { if (cw.repeatability.sets < MAX_REPEAT_SETS){ cw.repeatability.sets++; cw.repeatability.rows.push({reading:null}); cw.repeatability.rows.push({reading:null}); renderStepBody(); } };
   wrap.querySelector("#repRemove").onclick = () => { if (cw.repeatability.sets>1){ cw.repeatability.sets--; cw.repeatability.rows.pop(); cw.repeatability.rows.pop(); renderStepBody(); } };
+  }
 
   const dynHost = wrap.querySelector("#dynamicHost");
   function paintDynamic(){
+    if (!dynHost) return;
     dynHost.innerHTML = "";
     cw.dynamicTests.forEach((d, i) => {
       const block = document.createElement("div");
@@ -1051,16 +1172,17 @@ function renderCWPage(laneIndex){
           ${fieldHTML("Article Name", `${base}.articleName`, d.articleName)}
           ${fieldHTML("Article Number", `${base}.articleNumber`, d.articleNumber)}
         </div>
+        ${mail ? "" : `
         <h4 class="minihead">Product Dimension</h4>
         <div class="field-grid cols-3" style="margin-bottom:14px;">
           ${fieldHTML("Length (mm)", `${base}.length`, d.length, {type:"number"})}
           ${fieldHTML("Width (mm)", `${base}.width`, d.width, {type:"number"})}
           ${fieldHTML("Height (mm)", `${base}.height`, d.height, {type:"number"})}
-        </div>
-        <div class="field-grid cols-4" style="margin-bottom:14px;">
-          ${fieldHTML("Filter Frequency (Hz)", `${base}.filterFrequency`, d.filterFrequency, {type:"number"})}
+        </div>`}
+        <div class="field-grid ${mail ? "cols-3" : "cols-4"}" style="margin-bottom:14px;">
+          ${mail ? "" : fieldHTML("Filter Frequency (Hz)", `${base}.filterFrequency`, d.filterFrequency, {type:"number"})}
           ${fieldHTML("Speed Value", `${base}.speedValue`, d.speedValue, {type:"number"})}
-          ${fieldHTML("Speed Type", `${base}.speedType`, d.speedType, {type:"select", options:["Pcs/min","m/sec","m/min"]})}
+          ${fieldHTML("Speed Type", `${base}.speedType`, d.speedType, {type:"select", options:speedTypes})}
           ${fieldHTML("Quantity Test", `${base}.qtyTest`, d.qtyTest, {type:"number"})}
         </div>
         <div class="field-grid cols-3">
@@ -1074,13 +1196,15 @@ function renderCWPage(laneIndex){
     bindFields(dynHost, () => state);
   }
   paintDynamic();
+  if (showDynamic){
   wrap.querySelector("#dynAdd").onclick = () => { if (cw.dynamicTests.length < MAX_PRODUCTS){ cw.dynamicTests.push(makeDynamicTest()); renderStepBody(); } };
   wrap.querySelector("#dynRemove").onclick = () => { if (cw.dynamicTests.length>1){ cw.dynamicTests.pop(); renderStepBody(); } };
+  }
 
   const eccLoadInput = wrap.querySelector(`#f_lanes_${laneIndex}_cw_eccentricity_testLoad`);
-  if (eccLoadInput) eccLoadInput.addEventListener("input", () => { cw.eccentricity.testLoad = eccLoadInput.value===""?null:Number(eccLoadInput.value); eccHandle.updateAll(); });
+  if (eccLoadInput && eccHandle) eccLoadInput.addEventListener("input", () => { cw.eccentricity.testLoad = eccLoadInput.value===""?null:Number(eccLoadInput.value); eccHandle.updateAll(); });
   const repLoadInput = wrap.querySelector(`#f_lanes_${laneIndex}_cw_repeatability_testLoad`);
-  if (repLoadInput) repLoadInput.addEventListener("input", () => { cw.repeatability.testLoad = repLoadInput.value===""?null:Number(repLoadInput.value); repHandle.updateAll(); });
+  if (repLoadInput && repHandle) repLoadInput.addEventListener("input", () => { cw.repeatability.testLoad = repLoadInput.value===""?null:Number(repLoadInput.value); repHandle.updateAll(); });
 
   const unitSelect = wrap.querySelector("#f_mainInfo_unit");
   if (unitSelect) unitSelect.addEventListener("change", () => { state.mainInfo.unit = unitSelect.value; renderStepBody(); });
@@ -1352,12 +1476,16 @@ function updateNextEnabled(){
   btnPrint.style.display = (step && step.key === "config") ? "none" : "";
 
   let canProceed = true;
-  if (step && step.key === "config") canProceed = state.config.hasMDi !== null;
+  if (step && step.key === "config") canProceed = setupComplete();
   btnNext.disabled = !canProceed;
   btnNext.textContent = currentStepIndex >= steps.length - 1 ? "Generate" : "Next →";
 }
 
-function render(){ renderStepper(); renderStepBody(); }
+function render(){
+  const sub = document.getElementById("headerSubtitle");
+  if (sub) sub.innerHTML = isMail() ? "WIPOTEC Catchweigher Commissioning — Mail &amp; Logistic" : "WIPOTEC Checkweigher &amp; Metal Detector Commissioning";
+  renderStepper(); renderStepBody();
+}
 
 const API_BASE_URL = "";
 
