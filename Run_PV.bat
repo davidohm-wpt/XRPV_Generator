@@ -287,7 +287,9 @@ if not defined EDGE_EXE if exist "%ProgramFiles%\Microsoft\Edge\Application\msed
 if "%XRPV_USE_BROWSER%"=="1" set "EDGE_EXE="
 if defined EDGE_EXE (
     set "APP_PROFILE=%LOCALAPPDATA%\WIPOTEC Certificates\AppWindow"
-    start "" "!EDGE_EXE!" --app="!APP_URL!" --user-data-dir="!APP_PROFILE!" --no-first-run --no-default-browser-check --window-size=1300,900
+    REM --disable-extensions / --disable-sync: the app window needs no add-ons, and a new
+    REM profile would otherwise sync the user's own Edge extensions and open their welcome pages.
+    start "" "!EDGE_EXE!" --app="!APP_URL!" --user-data-dir="!APP_PROFILE!" --no-first-run --no-default-browser-check --disable-extensions --disable-sync --window-size=1300,900
 ) else (
     start "" "!APP_URL!"
 )
