@@ -246,23 +246,37 @@ echo ===================================================
 >"%XRPV_STATUS%" echo step:server
 
 REM Stop any server left running from an earlier launch, otherwise the new version
-REM cannot start (port 8000 is already in use) and the browser keeps showing the OLD pages.
+REM cannot start (port 8000 is already in use) and the app keeps showing the OLD pages.
+REM Old versions ran it in a "WIPOTEC PV Server" window; newer ones run it hidden, so also
+REM stop the Python process that listens on port 8000 (never any other program).
 taskkill /f /t /fi "WINDOWTITLE eq WIPOTEC PV Server*" >nul 2>&1
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; if ($p -and $p.ProcessName -like 'python*') { Stop-Process -Id $p.Id -Force } }" >nul 2>&1
 timeout /t 1 /nobreak >nul
-REM The server window closes by itself when the server stops normally (it stops on its own
-REM once every app page in the browser has been closed). If the server crashes, the window
-REM stays open ("|| pause") so the error can be read.
-start /min "WIPOTEC PV Server" cmd /c "!PYTHON_CMD! main.py || pause"
+
+REM Start the server hidden: no window and nothing on the taskbar. It stops by itself once
+REM every app window/page has been closed. Its output goes to server_console.log and
+REM server_error.log (shown in "Show details" if it fails to start).
+REM (The process ID goes through server.pid, not "for /f": the server would inherit the
+REM pipe that "for /f" reads and this script would wait forever.)
+set "XRPV_PY=!PYTHON_CMD!"
+set "SRV_PID="
+if exist server.pid del /q server.pid
+powershell -NoProfile -Command "$py = $env:XRPV_PY.Trim([char]34); $env:PYTHONUTF8 = '1'; $s = Start-Process -FilePath $py -ArgumentList 'main.py' -WorkingDirectory $PWD.Path -WindowStyle Hidden -RedirectStandardOutput 'server_console.log' -RedirectStandardError 'server_error.log' -PassThru; Set-Content -Path 'server.pid' -Value $s.Id -Encoding Ascii" >nul 2>&1
+if exist server.pid set /p SRV_PID=<server.pid
 
 echo Waiting for the server to start...
 
 set SERVER_READY=0
+set SERVER_DIED=0
 for /L %%i in (1,1,60) do (
-    if "!SERVER_READY!"=="0" (
+    if "!SERVER_READY!!SERVER_DIED!"=="00" (
         powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'http://127.0.0.1:8000/' -UseBasicParsing -TimeoutSec 2 | Out-Null; exit 0 } catch { exit 1 }" >nul 2>&1
         if !errorlevel! equ 0 (
             set SERVER_READY=1
-        ) else (
+        ) else if defined SRV_PID (
+            tasklist /fi "PID eq !SRV_PID!" /nh 2>nul | find "!SRV_PID!" >nul || set SERVER_DIED=1
+        )
+        if "!SERVER_READY!!SERVER_DIED!"=="00" (
             if %%i equ 3 (
                 echo Still waiting... if a Windows Firewall popup appeared asking
                 echo about python.exe, click "Allow access" to continue.
@@ -285,7 +299,9 @@ set "EDGE_EXE="
 if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
 if not defined EDGE_EXE if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
 if "%XRPV_USE_BROWSER%"=="1" set "EDGE_EXE="
-if defined EDGE_EXE (
+if not "!SERVER_READY!"=="1" (
+    REM no working server: do not open an empty app window
+) else if defined EDGE_EXE (
     set "APP_PROFILE=%LOCALAPPDATA%\WIPOTEC Certificates\AppWindow"
     REM --disable-extensions / --disable-sync: the app window needs no add-ons, and a new
     REM profile would otherwise sync the user's own Edge extensions and open their welcome pages.
@@ -296,18 +312,23 @@ if defined EDGE_EXE (
 
 echo ===================================================
 if "!SERVER_READY!"=="1" (
-    echo The system is ready. The server is running minimized
-    echo in the taskbar as "WIPOTEC PV Server".
+    echo The system is ready. The server runs in the background and stops by
+    echo itself when the app window is closed.
 ) else (
-    echo [Warning] The server did not respond within the timeout.
-    echo Check the "WIPOTEC PV Server" window for details.
+    echo [Error] The server did not start. Its error output:
+    echo ---------------------------------------------------
+    if exist server_error.log type server_error.log
+    echo ---------------------------------------------------
 )
 echo ===================================================
 if "!SERVER_READY!"=="1" (
     >"%XRPV_STATUS%" echo ready
+) else if "!SERVER_DIED!"=="1" (
+    >"%XRPV_STATUS%" echo error:The server stopped while starting - click Show details to see why.
 ) else (
-    >"%XRPV_STATUS%" echo error:The server did not start in time - check the WIPOTEC PV Server window in the taskbar.
+    >"%XRPV_STATUS%" echo error:The server did not start in time - click Show details to see why.
 )
+if not "!SERVER_READY!"=="1" if not defined XRPV_SPLASH pause
 if defined XRPV_SPLASH exit /b 0
 echo This window will close automatically in a few seconds.
 timeout /t 6

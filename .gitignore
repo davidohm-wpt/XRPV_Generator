@@ -107,3 +107,6 @@ Make_NewPC_Pack.bat
 
 # Source templates used to design forms (kept local, not pushed)
 _reference/
+
+# Runtime files of the hidden server
+server.pid
