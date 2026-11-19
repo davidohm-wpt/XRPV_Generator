@@ -276,8 +276,21 @@ for /L %%i in (1,1,60) do (
     )
 )
 
-REM The ?v= part makes the browser treat this as a new address, so it never shows a cached old home page
-start "" "http://127.0.0.1:8000/?v=!APP_VERSION!"
+REM Open the app in its own window (Microsoft Edge "app mode": no address bar or tabs,
+REM own taskbar icon) with a separate profile kept outside the program folder. Falls back
+REM to the normal browser when Edge is not installed, or when XRPV_USE_BROWSER=1.
+REM The ?v= part makes it a new address, so a cached old home page is never shown.
+set "APP_URL=http://127.0.0.1:8000/?v=!APP_VERSION!"
+set "EDGE_EXE="
+if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
+if not defined EDGE_EXE if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "EDGE_EXE=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
+if "%XRPV_USE_BROWSER%"=="1" set "EDGE_EXE="
+if defined EDGE_EXE (
+    set "APP_PROFILE=%LOCALAPPDATA%\WIPOTEC Certificates\AppWindow"
+    start "" "!EDGE_EXE!" --app="!APP_URL!" --user-data-dir="!APP_PROFILE!" --no-first-run --no-default-browser-check --window-size=1300,900
+) else (
+    start "" "!APP_URL!"
+)
 
 echo ===================================================
 if "!SERVER_READY!"=="1" (

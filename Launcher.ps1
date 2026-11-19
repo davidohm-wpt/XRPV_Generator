@@ -183,7 +183,7 @@ $timer.Add_Tick({
             '^ready$'                     {
                 Set-Active 6
                 $script:done = $true
-                $note.ForeColor = $okGreen; $note.Text = 'Ready - the app is opening in your browser.'
+                $note.ForeColor = $okGreen; $note.Text = 'Ready - the app window is opening.'
                 $closer = New-Object System.Windows.Forms.Timer
                 $closer.Interval = 1500
                 $closer.Add_Tick({ $this.Stop(); $form.Close() })
