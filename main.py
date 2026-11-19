@@ -93,7 +93,7 @@ if GTK_BIN.exists():
 # ============================================================
 import weasyprint
 
-from fastapi import FastAPI, Response, HTTPException
+from fastapi import FastAPI, Response, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
@@ -127,13 +127,95 @@ app.include_router(cwcq_router)
 app.include_router(xriq_router)
 
 
+# ============================================================
+# Auto-exit: close the server (and its console window) when the user has closed
+# every app page. Each page sends a heartbeat every 20 s and a "bye" when it is
+# closed; the script is injected into every HTML page below, so pages synced from
+# elsewhere do not need to carry it. Only armed after the first heartbeat, and only
+# when main.py runs as the program (not when imported by tests).
+# ============================================================
+import threading
+import time as _time
+
+HEARTBEAT_SCRIPT = b"""<script>(function(){var id=Math.random().toString(36).slice(2);
+function off(show){var b=document.getElementById('xrpv-off');if(!show){if(b)b.remove();return;}if(b)return;
+b=document.createElement('div');b.id='xrpv-off';
+b.textContent='The program has been closed. Open WIPOTEC Certificates again to continue - what you typed on this page is kept.';
+b.style.cssText='position:fixed;left:0;right:0;bottom:0;padding:10px 14px;background:#b02a37;color:#fff;font:14px Segoe UI,sans-serif;text-align:center;z-index:2147483647';
+document.body.appendChild(b);}
+function hb(){fetch('/heartbeat',{method:'POST',body:id,keepalive:true,cache:'no-store'}).then(function(r){off(!r.ok);}).catch(function(){off(true);});}
+hb();setInterval(hb,20000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)hb();});
+addEventListener('pagehide',function(){try{navigator.sendBeacon('/bye',id);}catch(e){}});})();</script>"""
+
+_AUTO_EXIT = {"armed": False, "clients": {}, "empty_since": None}
+_AUTO_EXIT_LOCK = threading.Lock()
+CLIENT_STALE_SECONDS = 150   # no heartbeat for this long = page is gone (browser crashed, PC off...)
+EMPTY_GRACE_SECONDS = 10     # time to wait after the last page closed (covers moving between pages)
+
+
+def _auto_exit_watchdog():
+    last_loop = _time.monotonic()
+    while True:
+        _time.sleep(5)
+        now = _time.monotonic()
+        with _AUTO_EXIT_LOCK:
+            if now - last_loop > 30:
+                # The PC was asleep: give open pages a fresh start instead of shutting down.
+                for k in _AUTO_EXIT["clients"]:
+                    _AUTO_EXIT["clients"][k] = now
+                _AUTO_EXIT["empty_since"] = None
+            last_loop = now
+            if not _AUTO_EXIT["armed"]:
+                continue
+            for k, seen in list(_AUTO_EXIT["clients"].items()):
+                if now - seen > CLIENT_STALE_SECONDS:
+                    del _AUTO_EXIT["clients"][k]
+            if _AUTO_EXIT["clients"]:
+                _AUTO_EXIT["empty_since"] = None
+                continue
+            if _AUTO_EXIT["empty_since"] is None:
+                _AUTO_EXIT["empty_since"] = now
+                continue
+            if now - _AUTO_EXIT["empty_since"] < EMPTY_GRACE_SECONDS:
+                continue
+        logger.info("All app pages are closed - shutting down the server.")
+        logging.shutdown()
+        os._exit(0)
+
+
+@app.post("/heartbeat")
+async def heartbeat(request: Request):
+    cid = (await request.body()).decode("utf-8", "ignore")[:64] or "anon"
+    with _AUTO_EXIT_LOCK:
+        _AUTO_EXIT["clients"][cid] = _time.monotonic()
+        _AUTO_EXIT["armed"] = True
+        _AUTO_EXIT["empty_since"] = None
+    return {"ok": True}
+
+
+@app.post("/bye")
+async def bye(request: Request):
+    cid = (await request.body()).decode("utf-8", "ignore")[:64]
+    with _AUTO_EXIT_LOCK:
+        _AUTO_EXIT["clients"].pop(cid, None)
+    return {"ok": True}
+
+
 @app.middleware("http")
 async def no_cache_for_pages(request, call_next):
-    """Always serve the HTML pages fresh, so a new version shows up without a manual hard refresh."""
+    """Always serve the HTML pages fresh (so a new version shows up without a hard refresh)
+    and add the heartbeat script used by the auto-exit."""
     response = await call_next(request)
     path = request.url.path
     if path == "/" or path.endswith(".html"):
         response.headers["Cache-Control"] = "no-store"
+        if response.headers.get("content-type", "").startswith("text/html"):
+            body = b"".join([chunk async for chunk in response.body_iterator])
+            if b"</body>" in body:
+                body = body.replace(b"</body>", HEARTBEAT_SCRIPT + b"</body>", 1)
+            headers = {k: v for k, v in response.headers.items() if k.lower() not in ("content-length", "etag")}
+            return Response(content=body, status_code=response.status_code, headers=headers)
     return response
 
 app.add_middleware(
@@ -619,4 +701,8 @@ def generate_pdf(data: FullPVData):
 if __name__ == "__main__":
     import uvicorn
     logger.info(f"Starting WIPOTEC PV Certificate System v{read_version()}...")
+    # Close the server by itself once the user has closed every app page.
+    # Set XRPV_NO_AUTO_EXIT=1 to keep it running (e.g. for debugging).
+    if os.environ.get("XRPV_NO_AUTO_EXIT") != "1":
+        threading.Thread(target=_auto_exit_watchdog, name="auto-exit", daemon=True).start()
     uvicorn.run(app, host="127.0.0.1", port=8000)
