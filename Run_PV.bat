@@ -79,6 +79,15 @@ if exist "!GIT_EXE!" (
     echo ===================================================
 )
 
+REM Progress for the splash window (Launcher.ps1). Each step writes one line such as
+REM "step:python"; "ready" or "error:..." ends it. XRPV_SPLASH is set when the splash
+REM window started this script hidden, so nothing may wait for a key press.
+REM NOTE: keep everything ABOVE this comment byte-identical. Older copies of this file
+REM read themselves line by line while "git reset" replaces them, so changing earlier
+REM lines would make them continue at the wrong position.
+set "XRPV_STATUS=%TEMP%\xrpv_launch_status.txt"
+>"%XRPV_STATUS%" echo step:checks
+
 :: Clean up previous run artifacts
 if exist "%~dp0weasyprint_check_error.log" del /q "%~dp0weasyprint_check_error.log"
 
@@ -106,6 +115,7 @@ set USING_PORTABLE_PYTHON=0
 echo ===================================================
 echo   Checking Python...
 echo ===================================================
+>"%XRPV_STATUS%" echo step:python
 
 if exist "!PORTABLE_PYTHON!" (
     echo Found portable Python next to this file - no installation needed.
@@ -122,7 +132,8 @@ if exist "!PORTABLE_PYTHON!" (
         ) else (
             echo [Error] Cannot find %PYTHON_INSTALLER% in the folder, and no
             echo PythonPortable folder was found next to this file either.
-            pause
+            >"%XRPV_STATUS%" echo error:Python was not found - the PythonPortable folder is missing.
+            if not defined XRPV_SPLASH pause
             exit /b 1
         )
     ) else (
@@ -133,6 +144,7 @@ if exist "!PORTABLE_PYTHON!" (
 echo ===================================================
 echo   Checking GTK3 Runtime...
 echo ===================================================
+>"%XRPV_STATUS%" echo step:gtk
 
 if exist "!PORTABLE_GTK_BIN!" (
     echo Found portable GTK3 runtime next to this file - adding it to PATH.
@@ -147,7 +159,8 @@ if exist "!PORTABLE_GTK_BIN!" (
             ) else (
                 echo [Error] Cannot find %GTK_INSTALLER% in the folder, and no
                 echo GTK3-Runtime portable folder was found next to this file either.
-                pause
+                >"%XRPV_STATUS%" echo error:The PDF engine was not found - the GTK3-Runtime folder is missing.
+                if not defined XRPV_SPLASH pause
                 exit /b 1
             )
         ) else (
@@ -161,11 +174,13 @@ if exist "!PORTABLE_GTK_BIN!" (
 echo ===================================================
 echo   Checking required Python packages...
 echo ===================================================
+>"%XRPV_STATUS%" echo step:packages
 
 !PYTHON_CMD! -c "import runpy, sys; sys.argv=['main']; runpy.run_path('main.py', run_name='__not_main__')" >nul 2>weasyprint_check_error.log
 if !errorlevel! neq 0 (
     echo Some required Python packages are missing or failed to load. Installing
     echo ^(one-time step, needs internet access, may take a minute^)...
+    >"%XRPV_STATUS%" echo step:installing
     if "!USING_PORTABLE_PYTHON!"=="1" (
         !PYTHON_CMD! -m pip install fastapi "uvicorn[standard]" jinja2 weasyprint
     ) else (
@@ -180,7 +195,8 @@ if !errorlevel! neq 0 (
         echo ---------------------------------------------------
         type weasyprint_check_error.log
         echo ---------------------------------------------------
-        pause
+        >"%XRPV_STATUS%" echo error:A required Python package failed to load - see weasyprint_check_error.log.
+        if not defined XRPV_SPLASH pause
         exit /b 1
     )
     echo Required Python packages installed and verified successfully.
@@ -191,6 +207,7 @@ if !errorlevel! neq 0 (
 echo ===================================================
 echo   Checking and Installing Thai Font (Sarabun)...
 echo ===================================================
+>"%XRPV_STATUS%" echo step:font
 
 set FONT_DIR=%LOCALAPPDATA%\Microsoft\Windows\Fonts
 if not exist "%FONT_DIR%" mkdir "%FONT_DIR%"
@@ -215,14 +232,18 @@ if exist "%~dp0Sarabun-Bold.ttf" (
     )
 )
 
-REM Create/refresh a Desktop shortcut with the WIPOTEC icon (no admin needed; safe to fail)
-if exist "%~dp0wipotec2.ico" (
+REM Create/refresh a Desktop shortcut with the WIPOTEC icon (no admin needed; safe to fail).
+REM It opens the splash launcher (Launch.vbs) when present, otherwise this file.
+if exist "%~dp0wipotec2.ico" if exist "%~dp0Launch.vbs" (
+    powershell -NoProfile -Command "try { $p = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WIPOTEC Certificates.lnk'; $s = (New-Object -ComObject WScript.Shell).CreateShortcut($p); $s.TargetPath = (Join-Path $env:WINDIR 'System32\wscript.exe'); $s.Arguments = [char]34 + '%~dp0Launch.vbs' + [char]34; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%~dp0wipotec2.ico'; $s.WindowStyle = 1; $s.Description = 'WIPOTEC Service Certificates'; $s.Save() } catch { }" >nul 2>&1
+) else if exist "%~dp0wipotec2.ico" (
     powershell -NoProfile -Command "try { $p = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WIPOTEC Certificates.lnk'; $s = (New-Object -ComObject WScript.Shell).CreateShortcut($p); $s.TargetPath = '%~dp0Run_PV.bat'; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%~dp0wipotec2.ico'; $s.WindowStyle = 7; $s.Description = 'WIPOTEC Service Certificates'; $s.Save() } catch { }" >nul 2>&1
 )
 
 echo ===================================================
 echo   Starting WIPOTEC PV Certificate System
 echo ===================================================
+>"%XRPV_STATUS%" echo step:server
 
 REM Stop any server left running from an earlier launch, otherwise the new version
 REM cannot start (port 8000 is already in use) and the browser keeps showing the OLD pages.
@@ -264,6 +285,12 @@ if "!SERVER_READY!"=="1" (
     echo Check the "WIPOTEC PV Server" window for details.
 )
 echo ===================================================
+if "!SERVER_READY!"=="1" (
+    >"%XRPV_STATUS%" echo ready
+) else (
+    >"%XRPV_STATUS%" echo error:The server did not start in time - check the WIPOTEC PV Server window in the taskbar.
+)
+if defined XRPV_SPLASH exit /b 0
 echo This window will close automatically in a few seconds.
 timeout /t 6
 exit /b 0
