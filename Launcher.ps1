@@ -81,7 +81,7 @@ $steps = @(
     @{ key = 'update';   text = 'Checking for updates' },
     @{ key = 'checks';   text = 'Checking Python and the PDF engine' },
     @{ key = 'packages'; text = 'Checking program components' },
-    @{ key = 'font';     text = 'Checking the Thai font' },
+    @{ key = 'font';     text = 'Checking the font' },
     @{ key = 'server';   text = 'Starting the server' },
     @{ key = 'open';     text = 'Opening the app' }
 )

@@ -205,7 +205,7 @@ if !errorlevel! neq 0 (
 )
 
 echo ===================================================
-echo   Checking and Installing Thai Font (Sarabun)...
+echo   Checking and Installing Font (Sarabun)...
 echo ===================================================
 >"%XRPV_STATUS%" echo step:font
 
