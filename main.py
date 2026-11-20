@@ -107,6 +107,7 @@ from preventive_maintenance import router as pm_router  # X-Ray Preventive Maint
 from cwcr import router as cwcr_router  # Checkweigher Calibration Report (CWCR) form + PDF
 from commissioning import router as cwcq_router  # CW Commissioning & Qualification (CWCQ) form + PDF
 from xray_installation import router as xriq_router  # X-Ray Installation & Qualification (XRIQ) form + PDF
+import auth  # sign-in (users.json + local_accounts.json)
 
 # --- Logging setup ---
 LOG_PATH = BASE_DIR / "pv_server.log"
@@ -125,6 +126,7 @@ app.include_router(pm_router)
 app.include_router(cwcr_router)
 app.include_router(cwcq_router)
 app.include_router(xriq_router)
+app.include_router(auth.router)
 
 
 # ============================================================
@@ -205,18 +207,22 @@ async def bye(request: Request):
 @app.middleware("http")
 async def no_cache_for_pages(request, call_next):
     """Always serve the HTML pages fresh (so a new version shows up without a hard refresh)
-    and add the heartbeat script used by the auto-exit."""
+    and add the heartbeat script used by the auto-exit (plus the signed-in user box)."""
     response = await call_next(request)
     path = request.url.path
-    if path == "/" or path.endswith(".html"):
+    if path == "/" or path.endswith(".html") or path in ("/login", "/set-password"):
         response.headers["Cache-Control"] = "no-store"
         if response.headers.get("content-type", "").startswith("text/html"):
             body = b"".join([chunk async for chunk in response.body_iterator])
             if b"</body>" in body:
-                body = body.replace(b"</body>", HEARTBEAT_SCRIPT + b"</body>", 1)
+                body = body.replace(b"</body>", auth.user_badge(request) + HEARTBEAT_SCRIPT + b"</body>", 1)
             headers = {k: v for k, v in response.headers.items() if k.lower() not in ("content-length", "etag")}
             return Response(content=body, status_code=response.status_code, headers=headers)
     return response
+
+# Sign-in check (added after the middleware above, so it runs first). Only enforced when
+# main.py runs as the program - see auth.ENABLED below.
+app.middleware("http")(auth.guard)
 
 app.add_middleware(
     CORSMiddleware,
@@ -705,4 +711,6 @@ if __name__ == "__main__":
     # Set XRPV_NO_AUTO_EXIT=1 to keep it running (e.g. for debugging).
     if os.environ.get("XRPV_NO_AUTO_EXIT") != "1":
         threading.Thread(target=_auto_exit_watchdog, name="auto-exit", daemon=True).start()
+    # Everyone has to sign in (accounts: users.json, managed with Manage_Users.bat).
+    auth.ENABLED = True
     uvicorn.run(app, host="127.0.0.1", port=8000)

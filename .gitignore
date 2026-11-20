@@ -110,3 +110,9 @@ _reference/
 
 # Runtime files of the hidden server
 server.pid
+
+# Sign-in: passwords chosen on this PC (never shared) and the maintainer's account tool
+local_accounts.json
+*.json.tmp
+Manage_Users.bat
+manage_users.py
