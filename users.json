@@ -5,6 +5,12 @@
       "active": true,
       "reset": 1,
       "temp": "pbkdf2_sha256$200000$19d7d711fb2fa56d9d890224e6db0e88$6e4e50a2fbbd4226c4e6d497a39870da4ef125a2e502d0abc413ac18ca8f3a70"
+    },
+    "edip.bryan": {
+      "name": "Edip Bryan",
+      "active": true,
+      "reset": 1,
+      "temp": "pbkdf2_sha256$200000$f09b84df5805273fe8749c287ea80263$f304e868b2089299ff10fda45d9f0434daa443fb1dfb1f93a23b4fd212bfcffe"
     }
   }
 }
