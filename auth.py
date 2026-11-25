@@ -323,7 +323,7 @@ def logout(request: Request):
 def user_badge(request: Request, tool_page: bool = False) -> bytes:
     """Small "signed in as" box added to the app pages (empty when sign-in is off).
     Tool pages (which have their own buttons at the top) get it at the bottom left,
-    with a link back to the menu."""
+    with a link back to the menu (they also have a big Home button of their own)."""
     sess = get_session(request) if ENABLED else None
     signed_in = bool(sess and not sess["must_change"])
     if not signed_in and not tool_page:
