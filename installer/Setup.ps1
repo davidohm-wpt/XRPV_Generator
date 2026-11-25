@@ -1,4 +1,4 @@
-# WIPOTEC Service Certificates - installer for a new PC.
+# WIPOTEC AIO Software - installer for a new PC.
 # Shipped next to XRPV_files.zip (made by Make_NewPC_Pack.bat). Unpacks the program with a
 # 0-100% progress bar, because Windows' own "Extract All" is very slow for the ~20,000 small
 # files of the portable Python, GTK and Git folders and looks frozen.
@@ -21,8 +21,8 @@ $prefix  = 'XRPV Generator/'   # top folder inside XRPV_files.zip
 
 if (-not (Test-Path $payload)) {
     [void][System.Windows.Forms.MessageBox]::Show(
-        "XRPV_files.zip was not found next to the installer.`r`n`r`nRight-click the zip you received, choose ""Extract All..."", then open the extracted folder and double-click ""Install WIPOTEC Certificates"" again.",
-        'WIPOTEC Certificates - Setup', 'OK', 'Warning')
+        "XRPV_files.zip was not found next to the installer.`r`n`r`nRight-click the zip you received, choose ""Extract All..."", then open the extracted folder and double-click ""Install WIPOTEC AIO Software"" again.",
+        'WIPOTEC AIO Software - Setup', 'OK', 'Warning')
     exit 1
 }
 
@@ -50,7 +50,7 @@ try {
     $zip = [System.IO.Compression.ZipFile]::OpenRead($payload)
 } catch {
     [void][System.Windows.Forms.MessageBox]::Show("XRPV_files.zip could not be opened. It may be incomplete - copy the pack again.`r`n`r`n$($_.Exception.Message)",
-        'WIPOTEC Certificates - Setup', 'OK', 'Error')
+        'WIPOTEC AIO Software - Setup', 'OK', 'Error')
     exit 1
 }
 $entries = @($zip.Entries | Where-Object { $_.FullName.StartsWith($prefix) -and $_.FullName.Length -gt $prefix.Length })
@@ -69,7 +69,7 @@ try { $v = Read-Entry 'VERSION.txt'; if ($v) { $version = $v.Trim() } } catch { 
 
 # ---------- window ----------
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'WIPOTEC Certificates - Setup'
+$form.Text = 'WIPOTEC AIO Software - Setup'
 $form.FormBorderStyle = 'FixedSingle'
 $form.MaximizeBox = $false
 $form.StartPosition = 'CenterScreen'
@@ -104,7 +104,7 @@ $ver.SetBounds(350, 28, 122, 24)
 $form.Controls.Add($ver)
 
 $title = New-Object System.Windows.Forms.Label
-$title.Text = 'Install Service Certificates'; $title.Font = New-Object System.Drawing.Font('Segoe UI', 12); $title.ForeColor = $ink
+$title.Text = 'Install WIPOTEC AIO Software'; $title.Font = New-Object System.Drawing.Font('Segoe UI', 12); $title.ForeColor = $ink
 $title.SetBounds(28, 70, 440, 26)
 $form.Controls.Add($title)
 
@@ -197,20 +197,20 @@ function Start-Install {
     try {
         $drive = New-Object System.IO.DriveInfo([System.IO.Path]::GetPathRoot($script:dest))
         if ($drive.AvailableFreeSpace -lt ($totalBytes + 50MB)) {
-            [void][System.Windows.Forms.MessageBox]::Show(('Not enough free space on {0} - about {1:N0} MB is needed.' -f $drive.Name, ($totalBytes / 1MB + 50)), 'WIPOTEC Certificates - Setup', 'OK', 'Warning')
+            [void][System.Windows.Forms.MessageBox]::Show(('Not enough free space on {0} - about {1:N0} MB is needed.' -f $drive.Name, ($totalBytes / 1MB + 50)), 'WIPOTEC AIO Software - Setup', 'OK', 'Warning')
             return
         }
     } catch { }
     if (-not $Auto -and (Test-Path (Join-Path $script:dest 'Run_PV.bat'))) {
         $a = [System.Windows.Forms.MessageBox]::Show("The program is already installed in:`r`n$($script:dest)`r`n`r`nInstall again over it? Saved sign-in passwords on this PC are kept.",
-            'WIPOTEC Certificates - Setup', 'YesNo', 'Question')
+            'WIPOTEC AIO Software - Setup', 'YesNo', 'Question')
         if ($a -ne 'Yes') { return }
     }
     try { [void](New-Item -ItemType Directory -Force -Path $script:dest) } catch { Show-Failed "Cannot create the folder: $($_.Exception.Message)"; return }
     $script:state = 'installing'
     $script:started = Get-Date
     $btnBrowse.Enabled = $false; $btnMain.Enabled = $false; $btnMain.Visible = $false
-    $title.Text = 'Installing Service Certificates'
+    $title.Text = 'Installing WIPOTEC AIO Software'
     $txtFolder.SelectionLength = 0; $btnClose.Focus() | Out-Null
     # Windows' own tar.exe unpacks about 7x faster than unpacking file by file from here;
     # its list of written files ("x path" lines) drives the progress bar.
@@ -343,7 +343,7 @@ $btnMain.Add_Click({
 $btnClose.Add_Click({ $form.Close() })
 $form.Add_FormClosing({ param($s, $e)
     if ($script:state -eq 'installing' -and -not $Auto) {
-        $a = [System.Windows.Forms.MessageBox]::Show("Stop the installation?`r`nThe program will not work until you run the installer again.", 'WIPOTEC Certificates - Setup', 'YesNo', 'Warning')
+        $a = [System.Windows.Forms.MessageBox]::Show("Stop the installation?`r`nThe program will not work until you run the installer again.", 'WIPOTEC AIO Software - Setup', 'YesNo', 'Warning')
         if ($a -ne 'Yes') { $e.Cancel = $true; return }
         $timer.Stop()
         if ($script:tar -and -not $script:tar.HasExited) { try { $script:tar.Kill() } catch { } }

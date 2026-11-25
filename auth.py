@@ -1,4 +1,4 @@
-"""Sign-in for WIPOTEC Service Certificates.
+"""Sign-in for WIPOTEC AIO Software.
 
 Accounts are listed in users.json, which is shipped with the program updates, so the
 maintainer can add, disable or reset an account for the whole team (Manage_Users.bat).
@@ -41,6 +41,8 @@ PBKDF2_ITERATIONS = 200_000
 
 # Reachable without signing in.
 OPEN_PATHS = {"/login", "/logout", "/set-password", "/heartbeat", "/bye", "/favicon.ico", "/version"}
+# Checked by the route itself (X-Ray Comparison PDF print jobs, see xray_compare.py).
+OPEN_PREFIXES = ("/xr-compare-pdf/",)
 
 router = APIRouter()
 _lock = threading.Lock()
@@ -142,7 +144,8 @@ def _wants_page(request: Request) -> bool:
 
 async def guard(request: Request, call_next):
     """HTTP middleware: lets a request through only for a signed-in user."""
-    if not ENABLED or request.url.path in OPEN_PATHS or request.method == "OPTIONS":
+    if (not ENABLED or request.url.path in OPEN_PATHS or request.url.path.startswith(OPEN_PREFIXES)
+            or request.method == "OPTIONS"):
         return await call_next(request)
     sess = get_session(request)
     if sess and not sess["must_change"]:
@@ -155,13 +158,13 @@ async def guard(request: Request, call_next):
     if _wants_page(request):
         page = "/set-password" if sess else "/login"
         return RedirectResponse(f"{page}?next={quote(nxt, safe='')}", status_code=303)
-    return JSONResponse(status_code=401, content={"detail": "Please sign in again (Close this page and open WIPOTEC Certificates)."})
+    return JSONResponse(status_code=401, content={"detail": "Please sign in again (Close this page and open WIPOTEC AIO Software)."})
 
 
 # ---------------- pages ----------------
 PAGE = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title} - WIPOTEC Certificates</title>
+<title>{title} - WIPOTEC AIO Software</title>
 <style>
 *{{box-sizing:border-box}}
 body{{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#eef4f4;font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a}}
@@ -182,7 +185,7 @@ button:hover{{background:#007f7f}}
 </style></head>
 <body><div class="box"><div class="bar"></div><div class="in">
 <img class="logo" src="{logo}" alt="WIPOTEC">
-<p class="sub">Service Certificates</p>
+<p class="sub">AIO Software</p>
 {body}
 <div class="foot">{foot}</div>
 </div></div></body></html>"""
@@ -317,18 +320,26 @@ def logout(request: Request):
     return resp
 
 
-def user_badge(request: Request) -> bytes:
-    """Small "signed in as" box added to the app pages (empty when sign-in is off)."""
-    if not ENABLED:
+def user_badge(request: Request, tool_page: bool = False) -> bytes:
+    """Small "signed in as" box added to the app pages (empty when sign-in is off).
+    Tool pages (which have their own buttons at the top) get it at the bottom left,
+    with a link back to the menu."""
+    sess = get_session(request) if ENABLED else None
+    signed_in = bool(sess and not sess["must_change"])
+    if not signed_in and not tool_page:
         return b""
-    sess = get_session(request)
-    if not sess or sess["must_change"]:
-        return b""
-    name = html.escape(display_name(sess["user"]))
+    link = 'color:#009999;text-decoration:none'
+    where = "bottom:8px;left:10px" if tool_page else "top:8px;right:10px"
+    parts = []
+    if tool_page:
+        parts.append(f'<a href="/" style="{link}">&#8592; Menu</a>')
+    if signed_in:
+        parts.append(f'&#128100; {html.escape(display_name(sess["user"]))}')
+        parts.append(f'<a href="/logout" style="{link}">Sign out</a>')
     return (
-        '<div id="xrpv-user" style="position:fixed;top:8px;right:10px;z-index:2147483646;'
+        f'<div id="xrpv-user" style="position:fixed;{where};z-index:2147483646;'
         'background:rgba(255,255,255,.95);border:1px solid #cfdcdc;border-radius:14px;padding:3px 11px;'
         "font:12px 'Segoe UI',sans-serif;color:#555\">"
-        f'&#128100; {name} &middot; <a href="/logout" style="color:#009999;text-decoration:none">Sign out</a></div>'
+        + " &middot; ".join(parts) + "</div>"
         "<style>@media print{#xrpv-user{display:none}}</style>"
     ).encode("utf-8")

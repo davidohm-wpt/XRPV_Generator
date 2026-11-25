@@ -108,6 +108,7 @@ from cwcr import router as cwcr_router  # Checkweigher Calibration Report (CWCR)
 from commissioning import router as cwcq_router  # CW Commissioning & Qualification (CWCQ) form + PDF
 from xray_installation import router as xriq_router  # X-Ray Installation & Qualification (XRIQ) form + PDF
 import auth  # sign-in (users.json + local_accounts.json)
+from xray_compare import router as xr_compare_router  # X-Ray Comparison tool (Tools section)
 
 # --- Logging setup ---
 LOG_PATH = BASE_DIR / "pv_server.log"
@@ -127,6 +128,7 @@ app.include_router(cwcr_router)
 app.include_router(cwcq_router)
 app.include_router(xriq_router)
 app.include_router(auth.router)
+app.include_router(xr_compare_router)
 
 
 # ============================================================
@@ -142,7 +144,7 @@ import time as _time
 HEARTBEAT_SCRIPT = b"""<script>(function(){var id=Math.random().toString(36).slice(2);
 function off(show){var b=document.getElementById('xrpv-off');if(!show){if(b)b.remove();return;}if(b)return;
 b=document.createElement('div');b.id='xrpv-off';
-b.textContent='The program has been closed. Open WIPOTEC Certificates again to continue - what you typed on this page is kept.';
+b.textContent='The program has been closed. Open WIPOTEC AIO Software again to continue - what you typed on this page is kept.';
 b.style.cssText='position:fixed;left:0;right:0;bottom:0;padding:10px 14px;background:#b02a37;color:#fff;font:14px Segoe UI,sans-serif;text-align:center;z-index:2147483647';
 document.body.appendChild(b);}
 function hb(){fetch('/heartbeat',{method:'POST',body:id,keepalive:true,cache:'no-store'}).then(function(r){off(!r.ok);}).catch(function(){off(true);});}
@@ -210,12 +212,15 @@ async def no_cache_for_pages(request, call_next):
     and add the heartbeat script used by the auto-exit (plus the signed-in user box)."""
     response = await call_next(request)
     path = request.url.path
-    if path == "/" or path.endswith(".html") or path in ("/login", "/set-password"):
+    tool_page = path.startswith("/xr-compare/")
+    if path == "/" or path.endswith(".html") or path in ("/login", "/set-password") or tool_page:
         response.headers["Cache-Control"] = "no-store"
         if response.headers.get("content-type", "").startswith("text/html"):
             body = b"".join([chunk async for chunk in response.body_iterator])
             if b"</body>" in body:
-                body = body.replace(b"</body>", auth.user_badge(request) + HEARTBEAT_SCRIPT + b"</body>", 1)
+                # The X-Ray Comparison page sends its own heartbeat (app.js).
+                extra = auth.user_badge(request, tool_page) + (b"" if tool_page else HEARTBEAT_SCRIPT)
+                body = body.replace(b"</body>", extra + b"</body>", 1)
             headers = {k: v for k, v in response.headers.items() if k.lower() not in ("content-length", "etag")}
             return Response(content=body, status_code=response.status_code, headers=headers)
     return response
@@ -706,7 +711,7 @@ def generate_pdf(data: FullPVData):
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info(f"Starting WIPOTEC PV Certificate System v{read_version()}...")
+    logger.info(f"Starting WIPOTEC AIO Software v{read_version()}...")
     # Close the server by itself once the user has closed every app page.
     # Set XRPV_NO_AUTO_EXIT=1 to keep it running (e.g. for debugging).
     if os.environ.get("XRPV_NO_AUTO_EXIT") != "1":

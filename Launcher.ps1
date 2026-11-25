@@ -1,4 +1,4 @@
-# WIPOTEC Service Certificates - splash launcher.
+# WIPOTEC AIO Software - splash launcher.
 # Shows a small branded window while Run_PV.bat runs hidden in the background, and
 # follows its progress through %TEMP%\xrpv_launch_status.txt ("step:...", "ready",
 # "error:..."). Run_PV.bat still does all the real work, so it also keeps working on
@@ -27,7 +27,7 @@ $fontBold  = New-Object System.Drawing.Font('Segoe UI Semibold', 10)
 
 # ---------- window ----------
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'WIPOTEC Certificates'
+$form.Text = 'WIPOTEC AIO Software'
 $form.FormBorderStyle = 'None'
 $form.StartPosition = 'CenterScreen'
 $form.ClientSize = New-Object System.Drawing.Size(480, 330)
@@ -72,7 +72,7 @@ $ver.SetBounds(330, 30, 122, 24)
 $form.Controls.Add($ver)
 
 $sub = New-Object System.Windows.Forms.Label
-$sub.Text = 'Service Certificates'; $sub.Font = New-Object System.Drawing.Font('Segoe UI', 11); $sub.ForeColor = $muted
+$sub.Text = 'AIO Software  -  service tools & certificates'; $sub.Font = New-Object System.Drawing.Font('Segoe UI', 11); $sub.ForeColor = $muted
 $sub.SetBounds(28, 70, 300, 24)
 $form.Controls.Add($sub)
 

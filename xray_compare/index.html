@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Ray Comparison</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="shortcut icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <img src="wipotec-logo.png" alt="WIPOTEC" class="logo">
+  <span class="subtitle" data-i18n="subtitle">X-Ray Inspection Systems – Product Comparison</span>
+  <span class="version-badge" id="version_badge">v...</span>
+  <div class="lang-switch">
+    <button class="lang-btn active" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="th">ไทย</button>
+    <button class="lang-btn" data-lang="zh">中文</button>
+  </div>
+</header>
+
+<main>
+  <div class="intro">
+    <h1 data-i18n="introTitle">Select a Model to View Specifications</h1>
+    <p data-i18n="introText">Click any model card below to see its full technical details</p>
+  </div>
+
+  <div class="brand-switch" id="brandSwitch">
+    <button class="brand-btn active" data-brand="Wipotec">WIPOTEC</button>
+    <button class="brand-btn" data-brand="Mettler-Toledo">Mettler-Toledo</button>
+    <button class="brand-btn" data-brand="Ishida">Ishida</button>
+    <button class="brand-btn" data-brand="Anritsu">Anritsu</button>
+  </div>
+
+  <div id="models" class="model-grid"></div>
+
+  <div class="compare-tray" id="compareTray">
+    <div class="compare-tray-label">
+      <span data-i18n="compareTrayLabel">Compare:</span>
+      <span class="compare-slot" id="slot1" data-i18n="compareEmpty">— Select model —</span>
+      <span class="compare-vs">VS</span>
+      <span class="compare-slot" id="slot2" data-i18n="compareEmpty">— Select model —</span>
+      <span class="compare-vs">VS</span>
+      <span class="compare-slot" id="slot3" data-i18n="compareEmpty">— Select model —</span>
+      <span class="compare-vs">VS</span>
+      <span class="compare-slot" id="slot4" data-i18n="compareEmpty">— Select model —</span>
+    </div>
+    <div class="compare-tray-actions">
+      <button class="btn-compare-now" id="btnCompareNow" disabled data-i18n="compareNow">Compare Now</button>
+      <button class="btn-compare-clear" id="btnCompareClear" data-i18n="compareClear">Clear</button>
+    </div>
+  </div>
+
+  <div id="detail"></div>
+  <div id="compareView" style="display:none;"></div>
+</main>
+
+<footer>
+  <span data-i18n="footer">© WIPOTEC GmbH – X-Ray Comparison Tool</span>
+  <span class="footer-version" id="footer_version"></span>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

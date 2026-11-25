@@ -1,4 +1,4 @@
-' WIPOTEC Service Certificates - opens the splash launcher without a console window.
+' WIPOTEC AIO Software - opens the splash launcher without a console window.
 ' If PowerShell cannot be used, it falls back to Run_PV.bat (the classic console start).
 Option Explicit
 Dim sh, fso, dir, ps, rc

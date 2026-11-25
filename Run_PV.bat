@@ -96,9 +96,9 @@ set APP_VERSION=unknown
 if exist "%~dp0VERSION.txt" (
     set /p APP_VERSION=<"%~dp0VERSION.txt"
 )
-title WIPOTEC PV Certificate System - Launcher (v!APP_VERSION!)
+title WIPOTEC AIO Software - Launcher (v!APP_VERSION!)
 echo ===================================================
-echo   WIPOTEC PV Certificate System - Version !APP_VERSION!
+echo   WIPOTEC AIO Software - Version !APP_VERSION!
 echo ===================================================
 
 :: Fallback installers (only used if no portable folder is present)
@@ -234,14 +234,16 @@ if exist "%~dp0Sarabun-Bold.ttf" (
 
 REM Create/refresh a Desktop shortcut with the WIPOTEC icon (no admin needed; safe to fail).
 REM It opens the splash launcher (Launch.vbs) when present, otherwise this file.
+REM The program was renamed: an old "WIPOTEC Certificates" shortcut to THIS folder is removed.
+powershell -NoProfile -Command "try { $o = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WIPOTEC Certificates.lnk'; if (Test-Path $o) { $s = (New-Object -ComObject WScript.Shell).CreateShortcut($o); if ($s.WorkingDirectory.TrimEnd('\') -eq '%~dp0'.TrimEnd('\')) { Remove-Item $o -Force } } } catch { }" >nul 2>&1
 if exist "%~dp0wipotec2.ico" if exist "%~dp0Launch.vbs" (
-    powershell -NoProfile -Command "try { $p = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WIPOTEC Certificates.lnk'; $s = (New-Object -ComObject WScript.Shell).CreateShortcut($p); $s.TargetPath = (Join-Path $env:WINDIR 'System32\wscript.exe'); $s.Arguments = [char]34 + '%~dp0Launch.vbs' + [char]34; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%~dp0wipotec2.ico'; $s.WindowStyle = 1; $s.Description = 'WIPOTEC Service Certificates'; $s.Save() } catch { }" >nul 2>&1
+    powershell -NoProfile -Command "try { $p = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WIPOTEC AIO Software.lnk'; $s = (New-Object -ComObject WScript.Shell).CreateShortcut($p); $s.TargetPath = (Join-Path $env:WINDIR 'System32\wscript.exe'); $s.Arguments = [char]34 + '%~dp0Launch.vbs' + [char]34; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%~dp0wipotec2.ico'; $s.WindowStyle = 1; $s.Description = 'WIPOTEC AIO Software'; $s.Save() } catch { }" >nul 2>&1
 ) else if exist "%~dp0wipotec2.ico" (
-    powershell -NoProfile -Command "try { $p = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WIPOTEC Certificates.lnk'; $s = (New-Object -ComObject WScript.Shell).CreateShortcut($p); $s.TargetPath = '%~dp0Run_PV.bat'; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%~dp0wipotec2.ico'; $s.WindowStyle = 7; $s.Description = 'WIPOTEC Service Certificates'; $s.Save() } catch { }" >nul 2>&1
+    powershell -NoProfile -Command "try { $p = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WIPOTEC AIO Software.lnk'; $s = (New-Object -ComObject WScript.Shell).CreateShortcut($p); $s.TargetPath = '%~dp0Run_PV.bat'; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = '%~dp0wipotec2.ico'; $s.WindowStyle = 7; $s.Description = 'WIPOTEC AIO Software'; $s.Save() } catch { }" >nul 2>&1
 )
 
 echo ===================================================
-echo   Starting WIPOTEC PV Certificate System
+echo   Starting WIPOTEC AIO Software
 echo ===================================================
 >"%XRPV_STATUS%" echo step:server
 
