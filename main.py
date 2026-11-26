@@ -109,6 +109,7 @@ from commissioning import router as cwcq_router  # CW Commissioning & Qualificat
 from xray_installation import router as xriq_router  # X-Ray Installation & Qualification (XRIQ) form + PDF
 import auth  # sign-in (users.json + local_accounts.json)
 from xray_compare import router as xr_compare_router  # X-Ray Comparison tool (Tools section)
+from spare_part import router as spare_part_router  # Spare Part On Hand (Tools section)
 
 # --- Logging setup ---
 LOG_PATH = BASE_DIR / "pv_server.log"
@@ -129,6 +130,7 @@ app.include_router(cwcq_router)
 app.include_router(xriq_router)
 app.include_router(auth.router)
 app.include_router(xr_compare_router)
+app.include_router(spare_part_router)
 
 
 # ============================================================
@@ -212,14 +214,15 @@ async def no_cache_for_pages(request, call_next):
     and add the heartbeat script used by the auto-exit (plus the signed-in user box)."""
     response = await call_next(request)
     path = request.url.path
-    tool_page = path.startswith("/xr-compare/")
+    tool_page = path.startswith(("/xr-compare/", "/spare-part/"))
     if path == "/" or path.endswith(".html") or path in ("/login", "/set-password") or tool_page:
         response.headers["Cache-Control"] = "no-store"
         if response.headers.get("content-type", "").startswith("text/html"):
             body = b"".join([chunk async for chunk in response.body_iterator])
             if b"</body>" in body:
                 # The X-Ray Comparison page sends its own heartbeat (app.js).
-                extra = auth.user_badge(request, tool_page) + (b"" if tool_page else HEARTBEAT_SCRIPT)
+                own_heartbeat = path.startswith("/xr-compare/")
+                extra = auth.user_badge(request, tool_page) + (b"" if own_heartbeat else HEARTBEAT_SCRIPT)
                 body = body.replace(b"</body>", extra + b"</body>", 1)
             headers = {k: v for k, v in response.headers.items() if k.lower() not in ("content-length", "etag")}
             return Response(content=body, status_code=response.status_code, headers=headers)

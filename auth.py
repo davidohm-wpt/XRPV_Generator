@@ -114,6 +114,31 @@ def display_name(username: str) -> str:
     return u.get("name") or username
 
 
+# ---------------- roles ----------------
+# user:       everyday use; changes in tools that need approval are sent as requests
+# supervisor: also approves / rejects requests and saves changes directly
+# developer:  everything, plus maintenance (e.g. importing reference files, resetting test data)
+ROLES = ("user", "supervisor", "developer")
+ROLE_LABELS = {"user": "User", "supervisor": "Supervisor", "developer": "Developer"}
+
+
+def role_of(username: str) -> str:
+    r = str((load_users().get(username) or {}).get("role", "user")).lower()
+    return r if r in ROLES else "user"
+
+
+def current_user(request: Request):
+    """{"username", "name", "role"} of the signed-in user, or None. When sign-in is off
+    (tests / imported module) a local developer is assumed."""
+    if not ENABLED:
+        return {"username": "local", "name": "Local user", "role": "developer"}
+    sess = get_session(request)
+    if not sess or sess["must_change"]:
+        return None
+    u = sess["user"]
+    return {"username": u, "name": display_name(u), "role": role_of(u)}
+
+
 # ---------------- sessions ----------------
 def get_session(request: Request):
     token = request.cookies.get(COOKIE)
@@ -334,7 +359,8 @@ def user_badge(request: Request, tool_page: bool = False) -> bytes:
     if tool_page:
         parts.append(f'<a href="/" style="{link}">&#8592; Menu</a>')
     if signed_in:
-        parts.append(f'&#128100; {html.escape(display_name(sess["user"]))}')
+        parts.append(f'&#128100; {html.escape(display_name(sess["user"]))} '
+                     f'<span style="color:#8a9a9a">({ROLE_LABELS[role_of(sess["user"])]})</span>')
         parts.append(f'<a href="/logout" style="{link}">Sign out</a>')
     return (
         f'<div id="xrpv-user" style="position:fixed;{where};z-index:2147483646;'

@@ -113,6 +113,8 @@ server.pid
 
 # Sign-in: passwords chosen on this PC (never shared) and the maintainer's account tool
 local_accounts.json
+# Spare Part On Hand data of this PC (stock, requests, history, attachments)
+spare_data/
 *.json.tmp
 Manage_Users.bat
 manage_users.py

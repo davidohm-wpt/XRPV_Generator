@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spare Part On Hand</title>
+<style>
+/* Spare Part On Hand - moved in from the claude.ai prototype Ver.0.5.1.
+   Data now comes from the WIPOTEC AIO Software API (/api/spare/...), users and roles from its sign-in. */
+:root{color-scheme:light;
+--teal:#03787c;--teal-d:#025a5d;--teal-l:#e2f0f0;--tealink:#03686c;
+--bg:#ffffff;--ink:#142020;--mute:#5b6b6b;
+--line:#d9e3e3;--row:#f6f9f9;--red:#c62828;--red-l:#fdecec;--ok:#1b7f3b}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif;overflow-x:clip}
+h1,h2,.tabs button,.tot{font-family:"Segoe UI Semibold","Segoe UI",system-ui,sans-serif}
+.band{background:var(--teal);color:#fff;padding:clamp(18px,3vw,32px) max(4vw,16px) 0}
+.top,.tabs{max-width:1600px;margin:auto}
+.top{display:flex;flex-wrap:nowrap;gap:14px 32px;align-items:flex-end;justify-content:space-between}
+h1{margin:0;font-size:clamp(24px,2.4vw,38px);line-height:1.05;font-weight:700}
+.brand{display:flex;align-items:center;gap:18px;flex:1 1 auto}
+.logo{flex:none;display:flex;align-items:center;background:#03787c}
+.logo img{height:47px;width:auto;display:block}
+.home{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:20px;background:#fff;color:var(--teal-d);font-weight:700;font-size:16px;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.home:hover{background:#e9f6f6}
+.home span{font-size:19px;line-height:1}
+.sub{margin:4px 0 0;opacity:.9;font-size:15px;font-weight:600;letter-spacing:.06em}
+.tabs{display:flex;align-items:flex-end;gap:6px;margin-top:18px;flex-wrap:wrap}
+.tabs button.main{border:0;background:rgba(255,255,255,.15);color:#fff;font-size:28px;font-weight:700;padding:10px 64px;min-height:62px;min-width:260px;border-radius:10px 10px 0 0;cursor:pointer}
+.tabs button.main[aria-selected=true]{background:var(--bg);color:var(--teal-d)}
+.sec{display:flex;align-items:center;gap:2px;margin:0 0 8px;padding:3px;border-radius:10px;background:rgba(0,0,0,.14);flex-wrap:wrap}
+.sec button{border:0;background:transparent;color:#fff;font:600 15px "Segoe UI",sans-serif;padding:0 12px;min-height:36px;border-radius:7px;cursor:pointer;opacity:.85}
+.sec button[aria-selected=true]{background:var(--bg);color:var(--teal-d);opacity:1}
+.tabs .spacer{flex:1}
+.tuser{display:flex;flex-direction:column;gap:2px;align-self:flex-start;flex:none;text-align:right}
+.tuser span{font-size:12px;font-weight:700;letter-spacing:.08em;opacity:.85}
+.tuser b{font-size:17px}.tuser small{font-size:13px;opacity:.9}
+@media(max-width:900px){.top{flex-wrap:wrap}}
+.badge{display:inline-block;min-width:22px;padding:0 6px;border-radius:11px;background:#f57c00;color:#fff;font-size:13px;line-height:22px;text-align:center;margin-left:4px}
+.pill{display:inline-block;border-radius:11px;padding:1px 10px;font-size:13px;font-weight:700;line-height:20px}
+.pill.pending{background:#fff3cd;color:#8a5a00}.pill.complete{background:#dff3e6;color:#1b6b38}.pill.canceled{background:#eceff1;color:#5b6b6b}
+.small{font-size:12px;color:var(--mute);line-height:1.35;margin-top:2px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.mini{border:0;border-radius:7px;min-height:34px;padding:0 10px;font:600 14px "Segoe UI",sans-serif;cursor:pointer}
+.mini.ok{background:var(--teal);color:#fff}.mini.no{background:var(--red);color:#fff}.mini.ghost{background:var(--teal-l);color:var(--tealink)}
+#stbl td.lc{font-size:14px}
+.chgc{min-width:150px;max-width:240px;white-space:normal!important}
+.hist td.pnw{white-space:normal;min-width:170px;max-width:240px}
+.card{border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 26px;background:#fbfdfd}
+.card h2,.lh{margin:0 0 12px;font-size:24px}
+.finfo{margin:0 0 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}.finfo .alert{flex:1 1 100%}
+.qgrid{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 14px}
+.qf{width:90px}.qf input{text-align:center;font-size:18px;font-weight:600}.qf small{font-size:12px;color:var(--mute);text-align:center}.qf .tot{min-height:44px;line-height:44px;text-align:center}
+.frow{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+textarea{font:inherit;font-size:16px;color:inherit;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg);width:100%;resize:vertical}
+textarea:focus{outline:2px solid var(--teal);outline-offset:1px}
+.filebtn{display:inline-flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.flist{display:flex;flex-direction:column;gap:6px;margin:6px 0;max-width:360px}
+.fchip{display:inline-flex;align-items:center;gap:6px;background:var(--teal-l);color:var(--tealink);border-radius:8px;padding:4px 8px;font-size:14px;border:0;max-width:100%;overflow-wrap:anywhere;text-align:left}
+.fchip small{color:var(--mute)}.fchip button{border:0;background:none;color:var(--red);font-size:18px;cursor:pointer;min-width:28px}
+.fchip.link{cursor:pointer;margin:4px 4px 0 0}
+.fbtns{margin:14px 0 0}
+.mform{display:flex;flex-direction:column;gap:12px;text-align:left}.mform input,.mform select{margin:0}.mrow{display:flex;gap:12px;flex-wrap:wrap}
+.box:has(.mform){max-width:620px}
+#stbl tbody tr{cursor:pointer}#stbl tbody tr:hover td{background:var(--teal-l)}
+#stbl td.qv{font-size:18px;font-weight:600}#stbl td.qv.z{color:var(--mute);font-weight:400}
+.cb{display:flex;align-items:center;gap:8px;min-height:44px}.cb input{width:20px;height:20px;min-height:0}
+.dd{position:relative}
+#ddb[aria-current=true]{background:var(--bg);color:var(--teal-d);opacity:1}
+.ddm{position:absolute;right:0;top:calc(100% + 4px);z-index:5;min-width:200px;background:var(--bg);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column}
+.ddm button{color:var(--ink)!important;opacity:1!important;text-align:left;min-height:44px;font-size:16px}
+.ddm button:hover,.ddm button[aria-selected=true]{background:var(--teal-l)!important;color:var(--tealink)!important}
+#exp{margin:0 0 8px;background:#fff;color:var(--teal-d);border:0;border-radius:8px;min-height:44px;padding:0 18px;font:700 16px "Segoe UI",sans-serif;cursor:pointer}
+main{max-width:1600px;margin:auto;padding:20px max(4vw,16px) 60px}
+.bar{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end;margin-bottom:14px}
+.f{display:flex;flex-direction:column;gap:4px}
+.f>span{font-size:13px;font-weight:600;color:var(--mute)}
+.grow{flex:1 1 240px}
+input,select,button{font:inherit;font-size:16px;color:inherit}
+input,select{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:var(--bg);width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.scan{flex:3 1 380px}
+.scan input{min-height:58px;font-size:22px;font-weight:600;letter-spacing:.02em;border:2px solid var(--teal);padding:0 16px}
+.btn{min-height:44px;border:0;border-radius:8px;padding:0 18px;background:var(--teal);color:#fff;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.big{min-height:58px;min-width:190px;font-size:20px}
+.btn.ghost{background:var(--teal-l);color:var(--tealink)}
+.btn.red{background:var(--red);color:#fff}
+.chip{min-height:44px;border:1px solid var(--line);background:var(--bg);border-radius:22px;padding:0 16px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--teal);border-color:var(--teal);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th{background:var(--teal);color:#fff;font-weight:600;text-align:left;padding:8px 10px;white-space:nowrap}
+th.c,td.c{text-align:center}th.r,td.r{text-align:right}
+thead tr.g th{background:var(--teal-d);text-align:center;padding:4px}
+td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:var(--row)}
+td.pn{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.auto{color:var(--mute)}
+.tot{font-size:22px;font-weight:700;text-align:center}
+.zero{color:var(--red)}
+.obs td{background:var(--red-l)!important}.obs td.desc{color:var(--red);font-weight:600}
+.tag{font-size:13px;font-weight:600}.tag.new{color:var(--ok)}.tag.old{color:var(--red)}
+.abc{display:inline-block;font-style:normal;width:28px;height:28px;line-height:28px;text-align:center;border-radius:6px;font-weight:700}
+.abc.A{background:#f57c00;color:#fff}.abc.B{background:#fbc02d;color:#2b2200}.abc.C{background:var(--teal-l);color:var(--tealink)}
+a{color:var(--tealink)}
+details summary{cursor:pointer;color:var(--tealink);font-size:14px}
+details pre{white-space:pre-wrap;font:14px/1.45 "Segoe UI",sans-serif;margin:6px 0 0;color:var(--mute)}
+.note{color:var(--mute);font-size:14px;margin:10px 0}
+.alert{border-radius:10px;padding:12px 16px;margin:0 0 14px;font-weight:500}
+.alert.bad{background:var(--red-l);color:var(--red)}.alert.good{background:var(--teal-l);color:var(--tealink)}
+.hide{display:none!important}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--mute);margin:0 0 12px;align-items:center}
+.legend .abc{width:22px;height:22px;line-height:22px;font-size:13px;margin-right:4px}
+.sechead{display:flex;align-items:center;gap:10px;margin:0 0 14px;color:var(--mute);font-size:14px;flex-wrap:wrap}
+.sechead b{color:var(--ink);font:700 22px "Segoe UI Semibold","Segoe UI",sans-serif}
+.sechead .btn{margin-left:auto}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+.box{background:var(--bg);color:var(--ink);border-radius:12px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.box h2{margin:0 0 8px;font-size:26px}.box p,.box #mb{margin:0 0 18px}
+.box .acts{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+#stbl{table-layout:fixed;min-width:1000px}#stbl th{white-space:normal}
+#stbl td,#stbl th{padding:7px 6px;vertical-align:middle;text-align:center}
+#stbl td.desc,#stbl td.cat,#stbl th.l{text-align:left}
+#stbl td.desc,#stbl td.cat{min-width:0;overflow-wrap:anywhere}
+.hist td{white-space:nowrap}.hist td.dt{white-space:normal;min-width:260px}
+.loading{padding:40px;text-align:center;color:var(--mute)}
+@media(max-width:600px){table{font-size:13px}.btn.big{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="top">
+    <div class="brand">
+      <a class="home" href="/" title="Back to the WIPOTEC AIO Software menu"><span>&#8962;</span> Home</a>
+      <div class="logo"><img src="logo.png" alt="WIPOTEC" width="171" height="47"></div>
+      <div><h1>WIPOTEC SINGAPORE SPARE PART ON HAND</h1><p class="sub">SPARE PARTS STOCK BY COUNTRY - V.0.6</p></div>
+    </div>
+    <div class="tuser"><span>SIGNED IN</span><b id="who">…</b><small id="whorole"></small></div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="main" role="tab" data-v="stock">Stock</button>
+    <span class="spacer"></span>
+    <div class="sec"><button role="tab" data-v="requests">Requests &amp; Status <span class="badge hide" id="rqbadge">0</span></button></div>
+    <div class="sec dd" id="dd">
+      <button type="button" id="ddb" aria-haspopup="true" aria-expanded="false"><span id="ddl">Reference data</span> <span aria-hidden="true">▾</span></button>
+      <div class="ddm hide" id="ddm" role="menu">
+        <button role="menuitem" data-v="reference">Part Reference</button>
+        <button role="menuitem" data-v="sources">Source Log</button>
+        <button role="menuitem" data-v="map">Part Source Map</button>
+      </div>
+    </div>
+    <div class="sec"><button role="tab" data-v="history">History</button></div>
+    <button id="exp" type="button">Export as CSV</button>
+  </nav>
+</header>
+<main>
+<div id="loadmsg" class="loading">Loading…</div>
+<section id="v-stock" class="hide">
+  <div class="bar">
+    <label class="f grow"><span>Search stock</span><input id="sq" placeholder="Part no., description, size, category"></label>
+  </div>
+  <div class="scroll"><table id="stbl">
+    <colgroup><col style="width:96px"><col><col style="width:50px"><col style="width:14%"><col span="5" style="width:64px"><col style="width:64px"><col style="width:120px"><col style="width:120px"></colgroup>
+    <thead><tr class="g"><th colspan="4"></th><th colspan="6">Qty On Hand</th><th colspan="2"></th></tr>
+    <tr><th>Part No.</th><th class="l">Description</th><th>ABC</th><th class="l">Category</th>
+    <th>SG</th><th>TH</th><th>MY</th><th>IN</th><th>VN</th><th>Total</th>
+    <th>Last Counted</th><th>Counted By</th></tr></thead>
+    <tbody id="stb"></tbody></table></div>
+  <p class="note" id="stnote"></p>
+</section>
+<section id="v-reference" class="hide">
+  <div class="sechead"><b>Part Reference</b> reference data · secondary page</div>
+  <div class="bar">
+    <label class="f grow"><span>Search part</span><input id="rq" placeholder="Part no., description, details"></label>
+    <label class="f"><span>Group</span><select id="rg"><option value="">All groups</option></select></label>
+    <div class="f"><span>ABC class</span><div class="chips" id="rabc"></div></div>
+    <button type="button" class="btn ghost imp dev">Import Reference file</button>
+  </div>
+  <div class="legend"><span><i class="abc A">A</i>Wear and tear part (e.g. belts)</span><span><i class="abc B">B</i>Expendable / spare part (rotating, sliding parts, motors)</span><span><i class="abc C">C</i>Spare part (electronics, sensors, valves)</span></div>
+  <div class="impmsg" aria-live="polite"></div>
+  <div class="scroll"><table><thead><tr><th>Part No.</th><th>Description</th><th class="c">ABC</th><th>ABC Description</th><th>Group</th><th>Note</th><th class="r">Used in</th></tr></thead><tbody id="rtb"></tbody></table></div>
+  <p class="note" id="rnote"></p>
+</section>
+<section id="v-sources" class="hide">
+  <div class="sechead"><b>Source Log</b> documents already imported · secondary page</div>
+  <form class="bar" id="chkf">
+    <label class="f grow"><span>Check new file</span><input id="chk" placeholder="Commission / machine no. or file name"></label>
+    <button class="btn">Check</button>
+    <button type="button" class="btn ghost imp dev">Import Reference file</button>
+  </form>
+  <div id="chkmsg" aria-live="polite"></div><div class="impmsg" aria-live="polite"></div>
+  <div class="scroll"><table><thead><tr><th>Machine / Commission No.</th><th>File Name</th><th>Document Type</th><th>Machine Type</th><th>Project Name</th><th>Doc Date</th><th>Created By</th><th class="r">Pages</th><th class="r">Part lines</th><th class="r">Unique P/N</th><th>Imported</th></tr></thead><tbody id="srb"></tbody></table></div>
+  <p class="note">Import (Developer) reads WIPOTEC spare parts catalogues (etk-e1 PDF). A file name or commission no. already in this log is not imported again.</p>
+</section>
+<section id="v-map" class="hide">
+  <div class="sechead"><b>Part Source Map</b> which document each part came from · secondary page</div>
+  <div class="bar"><label class="f grow"><span>Search</span><input id="mq" placeholder="Part no. or commission no."></label></div>
+  <div class="scroll"><table><thead><tr><th>Part No.</th><th>Description</th><th>Machine / Commission No.</th><th>Project</th><th>Position</th><th class="r">Qty in doc</th></tr></thead><tbody id="mtb"></tbody></table></div>
+  <p class="note" id="mnote"></p>
+</section>
+<section id="v-requests" class="hide">
+  <div class="sechead"><b>Requests &amp; Status</b> request a change, follow approvals</div>
+  <form class="card" id="rqform" novalidate>
+    <h2>New request</h2>
+    <div class="bar">
+      <div class="f"><span>Request type</span><div class="chips" id="ftype"></div></div>
+      <label class="f scan"><span>Scan / Enter Part No.</span><input id="fp" list="pnl" placeholder="Scan barcode or type Part No." autocomplete="off"></label>
+      <datalist id="pnl"></datalist>
+    </div>
+    <div id="finfo" class="finfo"></div>
+    <div id="fqwrap"><div class="f"><span>New quantity on hand</span></div><div class="qgrid" id="fqgrid"></div></div>
+    <div class="frow">
+      <label class="f grow"><span id="fnote-l">Note / Comment (required when no file is attached)</span><textarea id="fnote" rows="3" placeholder="Why is the quantity changing? e.g. used for service at customer, received from HQ, stock count correction"></textarea></label>
+      <div class="f"><span>Attach file (customer PO, service report…)</span>
+        <label class="btn ghost filebtn">📎 Attach file<input type="file" id="ffile" multiple accept=".pdf,.png,.jpg,.jpeg,.heic,.xlsx,.xls,.docx,.doc,.csv,.msg,.eml"></label>
+        <div id="flist" class="flist"></div><small class="small">Up to 5 files, 10 MB each</small></div>
+    </div>
+    <div class="bar fbtns"><button class="btn big" id="fsub">Submit request</button><button type="button" class="btn ghost" id="fclr">Clear</button><span class="small" id="fhint"></span></div>
+    <div id="fmsg" aria-live="polite"></div>
+  </form>
+  <h2 class="lh">Request status</h2>
+  <div class="bar">
+    <div class="f"><span>Status</span><div class="chips" id="rqchips"></div></div>
+    <label class="f chk"><span>Show</span><span class="cb"><input type="checkbox" id="rqmine"> My requests only</span></label>
+  </div>
+  <div class="scroll"><table class="hist"><thead><tr><th>Req ID</th><th>Requested</th><th>Requester</th><th>Type</th><th>Part No.</th><th>Change</th><th>Note / Attachment</th><th>Status</th><th>Closed by</th><th>Action</th></tr></thead><tbody id="rqtb"></tbody></table></div>
+  <p class="note" id="rqnote"></p>
+</section>
+<section id="v-history" class="hide">
+  <div class="sechead"><b>History</b> audit trail of changes · secondary page <button type="button" class="btn red dev" id="reset">Reset all data (Developer)</button></div>
+  <div class="bar">
+    <label class="f grow"><span>Search history</span><input id="hq" placeholder="Part no., user, action"></label>
+    <label class="f"><span>Action</span><select id="ha"><option value="">All actions</option></select></label>
+    <label class="f"><span>Status</span><select id="hs"><option value="">All statuses</option><option>Pending</option><option>Complete</option><option>Canceled</option></select></label>
+  </div>
+  <div class="scroll"><table class="hist"><thead><tr><th>Date</th><th>Time</th><th>User</th><th>Action</th><th>Req ID</th><th>Part No.</th><th>Change</th><th>Status</th></tr></thead><tbody id="htb"></tbody></table></div>
+  <p class="note" id="hnote"></p>
+</section>
+</main>
+<input type="file" id="impf" accept=".pdf,application/pdf" multiple class="hide">
+<div class="modal hide" id="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+  <div class="box"><h2 id="mt"></h2><div id="mb"></div><div class="acts" id="ma"></div></div>
+</div>
+<script>
+{
+const C=['SG','TH','MY','IN','VN'];
+const ABCD={A:'Wear and tear part',B:'Expendable / spare part',C:'Spare part'};
+const ROLEL={user:'User',supervisor:'Supervisor',developer:'Developer'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);
+
+/* ---------- server data ---------- */
+let ME={id:'',name:'',role:'user',label:'User',canApprove:false,isDeveloper:false};
+let BASE={ref:[],src:[],map:[]},imp={ref:[],src:[],map:[]},stock=[],reqs=[],log=[];
+async function api(method,url,body,headers){
+  const o={method,headers:Object.assign({},headers||{}),cache:'no-store'};
+  if(body!==undefined){if(body instanceof Blob)o.body=body;else{o.headers['Content-Type']='application/json';o.body=JSON.stringify(body)}}
+  let r;try{r=await fetch(url,o)}catch(e){throw new Error('The program is not reachable. Open WIPOTEC AIO Software again.')}
+  let d=null;try{d=await r.json()}catch(e){}
+  if(r.status===401){location.href='/login?next='+encodeURIComponent('/spare-part/'+location.hash);throw new Error('Please sign in again.')}
+  if(!r.ok){const m=d&&d.detail;throw new Error(typeof m==='string'?m:('Error '+r.status))}
+  return d;
+}
+async function load(){
+  const s=await api('GET','/api/spare/state');
+  ME=s.me;BASE=s.base;imp=s.imp;stock=s.stock;reqs=s.reqs;log=s.log;
+  rebuild();groupsOpts();
+  $('who').textContent=ME.name;$('whorole').textContent=ME.label;
+  document.querySelectorAll('.dev').forEach(el=>el.classList.toggle('hide',!ME.isDeveloper));
+}
+const canApprove=()=>ME.canApprove;
+const LVN=r=>ROLEL[r]||'User';
+
+const REF=new Map();const SRC=new Map();let MAP=[];const used={};
+function rebuild(){
+  REF.clear();SRC.clear();MAP=[];for(const k in used)delete used[k];
+  [...BASE.ref,...imp.ref].forEach(r=>{if(!REF.has(r.p))REF.set(r.p,r)});
+  [...BASE.src,...imp.src].forEach(s=>SRC.set(s.no,s));
+  MAP=[...BASE.map,...imp.map];
+  MAP.forEach(m=>{(used[m[0]]=used[m[0]]||new Set()).add(m[1])});
+  $('pnl').innerHTML=[...REF.values()].map(r=>`<option value="${esc(r.p)}">${esc(r.d)}</option>`).join('');
+}
+const MAXF=5,MAXMB=10;
+const fsize=b=>b>1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+const z2=n=>String(n).padStart(2,'0');
+const fmtD=t=>{const d=new Date(t);return `${d.getFullYear()}-${z2(d.getMonth()+1)}-${z2(d.getDate())}`};
+const fmtT=t=>{const d=new Date(t);return `${z2(d.getHours())}:${z2(d.getMinutes())}`};
+const tot=q=>C.reduce((a,c)=>a+(+q[c]||0),0);
+const abcTag=a=>a?`<span class="abc ${esc(a)}">${esc(a)}</span>`:'';
+const isObs=r=>r&&/^OBSOLETE/.test(r.n||'');
+const pendOf=p=>reqs.find(r=>r.p===p&&r.status==='Pending');
+const lastOf=p=>reqs.filter(r=>r.p===p&&r.status!=='Canceled').sort((a,b)=>b.t.localeCompare(a.t))[0];
+const stOf=p=>stock.find(s=>s.p===p);
+const pill=s=>`<span class="pill ${esc(s.toLowerCase())}">${esc(s)}</span>`;
+const blank=v=>v===''||v===null||v===undefined?'(blank)':v;
+const TYPE={update:'Update quantity',add:'Add new part',delete:'Remove part'};
+function fmtCh(r){
+  if(r.type==='add')return 'New part: '+C.map(c=>`${c} ${r.ch.q[c]?.[1]||0}`).join(', ');
+  if(r.type==='delete')return `Remove part from stock (total ${r.ch.total||0})`;
+  return Object.entries(r.ch.q||{}).map(([c,[o,n]])=>`${c}: ${blank(o)} → ${blank(n)}`).join('; ');
+}
+
+/* ---------- stock page: read-only summary ---------- */
+function renderStock(){
+  const q=$('sq').value.trim().toLowerCase();
+  const rows=stock.filter(s=>{const r=REF.get(s.p);return !q||(s.p+' '+(r?.d||'')+' '+(r?.g||'')).toLowerCase().includes(q)});
+  $('stb').innerHTML=rows.map(s=>{const r=REF.get(s.p),last=lastOf(s.p),t=tot(s.q);
+    return `<tr class="${isObs(r)?'obs':''}" data-p="${esc(s.p)}" tabindex="0" title="Click to request a change">
+     <td class="pn">${esc(s.p)}</td>
+     <td class="auto desc">${r?esc(r.d):'<span class="tag old">Not in Part Reference</span>'}</td>
+     <td>${r?abcTag(r.a):''}</td>
+     <td class="auto cat">${r?esc(r.g):''}</td>
+     ${C.map(c=>`<td class="qv ${(+s.q[c]||0)===0?'z':''}">${esc(s.q[c]??0)}</td>`).join('')}
+     <td class="tot ${t===0?'zero':''}">${t}</td>
+     <td class="lc">${last?`${esc(fmtD(last.t))}<div class="small">${esc(fmtT(last.t))}</div>`:'–'}</td>
+     <td class="lc">${last?esc(last.by.name):'–'}</td></tr>`}).join('')||
+    `<tr><td colspan="12" class="note">No parts in stock yet. Add one from Requests & Status.</td></tr>`;
+  $('stnote').textContent=`${rows.length} part${rows.length===1?'':'s'} · approved quantities only · click a part to request a change`;
+  renderBadge();
+}
+function renderBadge(){const n=reqs.filter(r=>r.status==='Pending').length;$('rqbadge').textContent=n;$('rqbadge').classList.toggle('hide',!n)}
+const goReq=p=>{location.hash='requests';setType('update');$('fp').value=p;partInfo();setTimeout(()=>$('fq_SG')?.focus(),50)};
+$('stb').addEventListener('click',e=>{const tr=e.target.closest('tr[data-p]');if(tr)goReq(tr.dataset.p)});
+$('stb').addEventListener('keydown',e=>{if(e.key==='Enter'){const tr=e.target.closest('tr[data-p]');if(tr)goReq(tr.dataset.p)}});
+$('sq').addEventListener('input',renderStock);
+
+/* ---------- modal ---------- */
+let modalOpen=false;
+function modal(title,body,acts,html){
+  $('mt').textContent=title;if(html)$('mb').innerHTML=body;else $('mb').textContent=body;
+  modalOpen=true;
+  return new Promise(res=>{
+    $('ma').innerHTML=acts.map((a,i)=>`<button type="button" class="btn ${a.cls||''}" data-k="${i}">${esc(a.t)}</button>`).join('');
+    $('modal').classList.remove('hide');
+    const done=v=>{$('modal').classList.add('hide');$('ma').onclick=null;document.removeEventListener('keydown',key);modalOpen=false;res(v)};
+    const key=e=>{if(e.key==='Escape')done(null)};
+    document.addEventListener('keydown',key);
+    $('ma').onclick=e=>{const b=e.target.closest('[data-k]');if(b)done(acts[+b.dataset.k].v)};
+    $('ma').querySelector('button:last-child').focus();
+  });
+}
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('ma').querySelector('button')?.click()});
+
+/* ---------- new request form ---------- */
+let fType='update',fFiles=[];
+function setType(t){fType=t;$('ftype').querySelectorAll('[data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));partInfo()}
+$('ftype').innerHTML=Object.entries(TYPE).map(([k,v])=>`<button type="button" class="chip" data-t="${k}" aria-pressed="${k===fType}">${esc(v)}</button>`).join('');
+$('ftype').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b)setType(b.dataset.t)});
+$('fqgrid').innerHTML=C.map(c=>`<label class="f qf"><span>${c}</span><input type="number" min="0" inputmode="numeric" id="fq_${c}" data-c="${c}"><small id="fc_${c}"></small></label>`).join('')+
+  `<div class="f qf"><span>Total</span><b id="fqt" class="tot">0</b><small id="fct"></small></div>`;
+let mPart=null;
+function partInfo(){
+  const p=$('fp').value.trim(),r=REF.get(p),s=stOf(p),pend=p&&pendOf(p);
+  let info='',err='';
+  const mp=mPart&&mPart.p===p?mPart:null;
+  if(p){info=r?`<b>${esc(r.d)}</b> ${abcTag(r.a)} <span class="small">${esc(r.g)}</span>`
+      :mp?`<span class="pill pending">Manual part</span> <b>${esc(mp.d)}</b> ${abcTag(mp.a)} <span class="small">${esc(mp.g)}</span> <button type="button" class="mini ghost" id="fman">Edit details</button>`
+      :`<span class="tag old">Not found in Part Reference</span>${fType==='add'?' <button type="button" class="mini ok" id="fman">+ Add part details manually</button>':''}`;
+    if(!r&&!mp&&fType==='add')err='Part not found. Add its details manually (Part No., description, size… or attach a datasheet / photo) before submitting.';
+    if(isObs(r))err=esc(r.n);
+    if(pend)err=`${esc(pend.id)} by ${esc(pend.by.name)} is still Pending for this part. Wait for it, or cancel it first.`;
+    else if(fType==='add'&&s)err='This part is already in stock. Use "Update quantity".';
+    else if(fType!=='add'&&!s)err='This part is not in stock yet. Use "Add new part".';}
+  $('finfo').innerHTML=info+(err?`<div class="alert bad" style="margin:8px 0 0">${err}</div>`:'');
+  $('fqwrap').classList.toggle('hide',fType==='delete');
+  C.forEach(c=>{const el=$('fq_'+c),cur=s?s.q[c]:'';
+    if(el.dataset.p!==p+fType){el.value=fType==='update'&&s?cur:'';}
+    el.dataset.p=p+fType;$('fc_'+c).textContent=s?`now ${cur??0}`:''});
+  $('fct').textContent=s?`now ${tot(s.q)}`:'';calcT();
+  $('fsub').textContent=canApprove()?`Save (${ME.label})`:'Submit request';
+  $('fsub').disabled=!!err||!p;
+  $('fhint').textContent=canApprove()?`As ${ME.label} your changes save at once and are marked Complete.`:'Your requests wait for a Supervisor to approve them (Pending).';
+}
+async function manualPart(){
+  const p=$('fp').value.trim();
+  const m=mPart&&mPart.p===p?{...mPart}:{p,d:'',a:'',g:'',x:''};
+  const groups=[...new Set([...REF.values()].flatMap(r=>(r.g||'').split(', ')).filter(Boolean))];
+  let err='';
+  for(;;){
+    const body=`<div class="mform">
+      ${err?`<div class="alert bad" style="margin:0">${esc(err)}</div>`:''}
+      <label class="f"><span>Part No. *</span><input id="m_p" value="${esc(m.p)}" autocomplete="off"></label>
+      <label class="f"><span>Description *</span><input id="m_d" value="${esc(m.d)}" placeholder="e.g. Belt for weighing conveyor 600 x 300 mm"></label>
+      <div class="mrow"><label class="f"><span>ABC class</span><select id="m_a"><option value="">Not known</option>${['A','B','C'].map(a=>`<option value="${a}"${m.a===a?' selected':''}>${a} – ${esc(ABCD[a])}</option>`).join('')}</select></label>
+      <label class="f grow"><span>Group / Category</span><input id="m_g" list="m_gl" value="${esc(m.g)}" placeholder="e.g. Weighing conveyor"><datalist id="m_gl">${groups.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></label></div>
+      <label class="f"><span>Details (size, type, manufacturer, machine…)</span><textarea id="m_x" rows="3" placeholder="e.g. 600 x 300 mm, PU white 0.7 mm, roller Ø30 mm">${esc(m.x)}</textarea></label>
+      <label class="f"><span>Attach file instead / as well (datasheet, photo, label, PO)</span><input type="file" id="m_f" multiple accept=".pdf,.png,.jpg,.jpeg,.heic,.xlsx,.xls,.docx,.doc"></label>
+      <div class="small">* Part No. is required. Description is required unless you attach a file. Files are added to this request.</div></div>`;
+    const v=await modal('Add part details manually',body,[{t:'Cancel',cls:'ghost',v:false},{t:'Use these details',v:true}],true);
+    if(!v)return;
+    m.p=$('m_p').value.trim();m.d=$('m_d').value.trim();m.a=$('m_a').value;m.g=$('m_g').value.trim();m.x=$('m_x').value.trim();
+    const files=[...$('m_f').files];
+    if(!m.p){err='Enter the Part No.';continue}
+    if(!m.d&&!files.length){err='Enter a description or attach a file.';continue}
+    if(REF.has(m.p)){await modal('Part already exists',`${m.p} is already in Part Reference: ${REF.get(m.p).d}`,[{t:'OK',v:true}]);$('fp').value=m.p;partInfo();return}
+    for(const f of files){if(fFiles.length>=MAXF)break;if(f.size<=MAXMB*1048576)fFiles.push(f)}
+    mPart={p:m.p,d:m.d||'(see attached file)',a:m.a,g:m.g,x:m.x};
+    $('fp').value=m.p;renderFiles();partInfo();setTimeout(()=>$('fq_SG')?.focus(),30);return;
+  }
+}
+$('finfo').addEventListener('click',e=>{if(e.target.id==='fman')manualPart()});
+$('fp').addEventListener('keydown',e=>{if(e.key==='Enter'&&fType==='add'){const p=$('fp').value.trim();if(p&&!REF.has(p)&&!(mPart&&mPart.p===p)){e.preventDefault();manualPart()}}});
+function calcT(){const q={};C.forEach(c=>q[c]=$('fq_'+c).value);$('fqt').textContent=tot(q)}
+$('fp').addEventListener('input',partInfo);
+$('fqgrid').addEventListener('input',calcT);
+$('ffile').addEventListener('change',e=>{
+  const add=[...e.target.files];e.target.value='';let msg='';
+  for(const f of add){if(fFiles.length>=MAXF){msg=`Up to ${MAXF} files per request.`;break}
+    if(f.size>MAXMB*1048576){msg=`${f.name} is larger than ${MAXMB} MB.`;continue}fFiles.push(f)}
+  $('fmsg').innerHTML=msg?`<div class="alert bad">${esc(msg)}</div>`:'';renderFiles();
+});
+function renderFiles(){
+  $('flist').innerHTML=fFiles.map((f,i)=>`<span class="fchip">📎 ${esc(f.name)} <small>${fsize(f.size)}</small><button type="button" data-rm="${i}" aria-label="Remove ${esc(f.name)}">×</button></span>`).join('');
+  $('fnote-l').textContent=fFiles.length?'Note / Comment (optional – file attached)':'Note / Comment (required when no file is attached)';
+}
+$('flist').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(b){fFiles.splice(+b.dataset.rm,1);renderFiles()}});
+function clearForm(){mPart=null;$('fp').value='';$('fnote').value='';fFiles=[];renderFiles();C.forEach(c=>{$('fq_'+c).value='';$('fq_'+c).dataset.p=''});partInfo()}
+$('fclr').addEventListener('click',()=>{clearForm();$('fmsg').innerHTML=''});
+const formDirty=()=>!!($('fp').value.trim()||$('fnote').value.trim()||fFiles.length);
+$('rqform').addEventListener('submit',async e=>{
+  e.preventDefault();const p=$('fp').value.trim(),note=$('fnote').value.trim(),s=stOf(p);
+  const bad=m=>{$('fmsg').innerHTML=`<div class="alert bad">${esc(m)}</div>`};
+  if(!p)return bad('Enter a Part No.');
+  if(!fFiles.length&&!note){$('fnote').focus();return bad('Write a note explaining the change, or attach a file (e.g. customer PO or service report).')}
+  const q={};C.forEach(c=>{const v=$('fq_'+c).value;q[c]=v===''?0:Math.max(0,+v)});
+  if(fType==='update'&&!C.some(c=>String(q[c])!==String(s.q[c]??0)))return bad('No quantity changed.');
+  if(fType==='delete'){const ok=await modal(canApprove()?'Confirm to delete':'Request to delete',`${canApprove()?'Remove':'Ask a Supervisor to remove'} ${p} (total ${tot(s.q)}) from the stock list?`,[{t:'Cancel',cls:'ghost',v:false},{t:canApprove()?'Delete':'Send request',cls:'red',v:true}]);
+    if(!ok)return}
+  $('fsub').disabled=true;$('fmsg').innerHTML='<div class="alert good">Sending…</div>';
+  try{
+    const att=[];
+    for(const f of fFiles){const up=await api('POST','/api/spare/files',f,{'X-File-Name':encodeURIComponent(f.name),'Content-Type':f.type||'application/octet-stream'});att.push(up.id)}
+    const nr=fType==='add'&&!REF.has(p)&&mPart&&mPart.p===p?{d:mPart.d,a:mPart.a,g:mPart.g,x:mPart.x}:null;
+    const r=await api('POST','/api/spare/requests',{type:fType,p,q,note,att,newRef:nr});
+    clearForm();await load();renderAll();
+    $('fmsg').innerHTML=`<div class="alert good">${r.status==='Complete'?`${esc(r.id)} saved (Complete).`:`${esc(r.id)} sent for approval (Pending).`}</div>`;
+  }catch(err){bad(err.message);partInfo()}
+});
+
+/* ---------- request list ---------- */
+let rqF='',rqMine=false;
+function renderReq(){
+  const rows=reqs.filter(r=>(!rqF||r.status===rqF)&&(!rqMine||r.by.id===ME.id)).sort((a,b)=>b.t.localeCompare(a.t));
+  $('rqtb').innerHTML=rows.map(r=>{const ref=REF.get(r.p),own=r.by.id===ME.id;
+    return `<tr data-p="${esc(r.p)}"><td class="pn">${esc(r.id)}</td><td>${esc(fmtD(r.t))}<div class="small">${esc(fmtT(r.t))}</div></td><td>${esc(r.by.name)}<div class="small">${esc(LVN(r.by.role))}</div></td>
+     <td>${esc(TYPE[r.type])}</td><td class="pnw"><b>${esc(r.p)}</b><div class="small">${esc(ref?ref.d:(r.newRef?r.newRef.d:''))}</div>${r.newRef?`<span class="pill pending">Manual part</span>${r.newRef.a?' '+abcTag(r.newRef.a):''}${r.newRef.g?`<div class="small">${esc(r.newRef.g)}</div>`:''}${r.newRef.x?`<div class="small">${esc(r.newRef.x)}</div>`:''}`:''}</td><td class="chgc">${esc(fmtCh(r))}</td>
+     <td class="chgc">${r.note?`<div>${esc(r.note)}</div>`:''}${(r.att||[]).map(a=>`<button type="button" class="fchip link" data-f="${esc(a.id)}">📎 ${esc(a.name)}</button>`).join('')}${!r.note&&!(r.att||[]).length?'–':''}</td>
+     <td>${pill(r.status)}</td>
+     <td>${r.done?`${esc(r.done.act)}<div class="small">${esc(r.done.name)} · ${esc(fmtD(r.done.t))} ${esc(fmtT(r.done.t))}</div>`:'–'}</td>
+     <td><div class="acts">${r.status==='Pending'&&canApprove()?`<button class="mini ok" data-act="approve" data-r="${esc(r.id)}">Approve</button><button class="mini no" data-act="reject" data-r="${esc(r.id)}">Reject</button>`:''}
+     ${r.status==='Pending'&&own?`<button class="mini no" data-act="cancel" data-r="${esc(r.id)}">Cancel</button>`:''}</div></td></tr>`}).join('')||
+    '<tr><td colspan="10" class="note">No requests.</td></tr>';
+  $('rqnote').textContent=`${rows.length} request${rows.length===1?'':'s'} · ${canApprove()?'You can approve or reject Pending requests.':'You can cancel your own Pending requests.'}`;
+}
+async function doAct(act,rid){
+  const rq=reqs.find(x=>x.id===rid);if(!rq||rq.status!=='Pending')return;
+  const L={approve:['Approve request',`Approve ${rq.id} by ${rq.by.name}? ${fmtCh(rq)}`,'Approve',''],
+           reject:['Reject request',`Reject ${rq.id} by ${rq.by.name}? It will be marked Canceled.`,'Reject','red'],
+           cancel:['Cancel request',`Cancel your request ${rq.id}? It will be marked Canceled.`,'Cancel request','red']}[act];
+  if(!await modal(L[0],L[1],[{t:'Back',cls:'ghost',v:false},{t:L[2],cls:L[3],v:true}]))return;
+  try{await api('POST',`/api/spare/requests/${encodeURIComponent(rid)}/${act}`,{})}catch(err){await modal('Not done',err.message,[{t:'OK',v:true}])}
+  await load();renderAll();
+}
+async function openFile(id){
+  const r=reqs.find(x=>(x.att||[]).some(a=>a.id===id));const a=r&&r.att.find(x=>x.id===id);if(!a)return;
+  const url='/api/spare/files/'+encodeURIComponent(id);
+  const img=/^image\//.test(a.type)?`<img src="${url}" alt="" style="max-width:100%;max-height:60vh;display:block;margin:0 0 12px;border-radius:8px">`:'';
+  const v=await modal(a.name,`${img}<div class="small">${esc(a.type||'file')} · ${fsize(a.size)} · ${esc(r.id)}</div>`,[{t:'Close',cls:'ghost',v:false},{t:'Open / Download',v:true}],true);
+  if(v){const l=document.createElement('a');l.href=url;l.download=a.name;document.body.appendChild(l);l.click();l.remove()}
+}
+$('rqchips').innerHTML=['','Pending','Complete','Canceled'].map(s=>`<button type="button" class="chip" data-s="${s}" aria-pressed="${s===rqF}">${s||'All'}</button>`).join('');
+$('rqchips').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b)return;rqF=b.dataset.s;$('rqchips').querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===b));renderReq()});
+$('rqmine').addEventListener('change',e=>{rqMine=e.target.checked;renderReq()});
+$('rqtb').addEventListener('click',e=>{const f=e.target.closest('[data-f]');if(f){openFile(f.dataset.f);return}
+  const b=e.target.closest('[data-act]');if(b)doAct(b.dataset.act,b.dataset.r)});
+
+/* ---------- history ---------- */
+function renderHist(){
+  const q=$('hq').value.trim().toLowerCase(),a=$('ha').value,st=$('hs').value;
+  const acts=[...new Set(log.map(l=>l.a))];
+  $('ha').innerHTML='<option value="">All actions</option>'+acts.map(x=>`<option${x===a?' selected':''}>${esc(x)}</option>`).join('');
+  const rows=log.filter(l=>(!a||l.a===a)&&(!st||l.st===st)&&(!q||(l.u+' '+l.a+' '+l.p+' '+l.c+' '+l.rid).toLowerCase().includes(q)));
+  $('htb').innerHTML=rows.map(l=>`<tr><td>${esc(fmtD(l.t))}</td><td>${esc(fmtT(l.t))}</td><td>${esc(l.u)}<div class="small">${esc(LVN(l.role))}</div></td><td>${esc(l.a)}</td><td class="pn">${esc(l.rid)}</td><td class="pn">${esc(l.p)}</td><td class="dt">${esc(l.c)}</td><td>${l.st?pill(l.st):''}</td></tr>`).join('')||
+    '<tr><td colspan="8" class="note">No changes recorded yet.</td></tr>';
+  $('hnote').textContent=`${rows.length} of ${log.length} entries · newest first`;
+}
+['hq','ha','hs'].forEach(id=>$(id).addEventListener('input',renderHist));
+$('reset').addEventListener('click',async()=>{
+  if(!await modal('Reset all data','This clears all stock quantities, requests, history, imported reference files and attachments on this program. Part Reference from the original catalogues stays. This cannot be undone.',[{t:'Cancel',cls:'ghost',v:false},{t:'Reset everything',cls:'red',v:true}]))return;
+  try{await api('POST','/api/spare/reset',{})}catch(err){await modal('Not done',err.message,[{t:'OK',v:true}])}
+  await load();renderAll();
+});
+
+/* ---------- export ---------- */
+$('exp').addEventListener('click',async()=>{
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const csv='﻿'+[['Part No.','Description','ABC','ABC Description','Category',...C,'Total','Last Counted','Counted By'].map(q).join(',')]
+   .concat(stock.map(s=>{const r=REF.get(s.p)||{},l=lastOf(s.p);
+     return[s.p,r.d,r.a,ABCD[r.a]||'',r.g,...C.map(c=>s.q[c]),tot(s.q),l?fmtD(l.t)+' '+fmtT(l.t):'',l?l.by.name:''].map(q).join(',')})).join('\r\n');
+  const d=new Date();
+  const name=`Stock Spare Part_${d.getFullYear()}_${z2(d.getMonth()+1)}_${z2(d.getDate())}_${z2(d.getHours())}${z2(d.getMinutes())}.csv`;
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const l=document.createElement('a');l.href=url;l.download=name;document.body.appendChild(l);l.click();l.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+  const b=$('exp');b.textContent='Downloaded';setTimeout(()=>b.textContent='Export as CSV',2200);
+  try{await api('POST','/api/spare/export-log',{name});log.unshift({t:new Date().toISOString(),u:ME.name,role:ME.role,a:'Export CSV',rid:'',p:'',c:name,st:''})}catch(e){}
+});
+
+/* ---------- reference ---------- */
+let abcF='';
+$('rabc').innerHTML=['','A','B','C'].map(a=>`<button type="button" class="chip" data-a="${a}" aria-pressed="${a===''}">${a||'All'}</button>`).join('');
+$('rabc').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;abcF=b.dataset.a;
+  $('rabc').querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===b));renderRef()});
+function groupsOpts(){const g=[...new Set([...REF.values()].flatMap(r=>(r.g||'').split(', ')).filter(Boolean))];
+  const cur=$('rg').value;$('rg').innerHTML='<option value="">All groups</option>'+g.map(x=>`<option${x===cur?' selected':''}>${esc(x)}</option>`).join('')}
+function renderRef(){
+  const q=$('rq').value.trim().toLowerCase(),g=$('rg').value,all=[...REF.values()];
+  const rows=all.filter(r=>(!abcF||r.a===abcF)&&(!g||(r.g||'').split(', ').includes(g))&&(!q||(r.p+' '+r.d+' '+(r.x||'')).toLowerCase().includes(q)));
+  $('rtb').innerHTML=rows.map(r=>{const u=used[r.p]?used[r.p].size:0;
+   return `<tr class="${isObs(r)?'obs':''}"><td class="pn">${esc(r.p)}</td>
+    <td>${esc(r.d)}${r.x?`<details><summary>Details</summary><pre>${esc(r.x)}</pre></details>`:''}</td>
+    <td class="c">${abcTag(r.a)}</td><td>${esc(ABCD[r.a]||'')}</td>
+    <td>${esc(r.g)}</td><td>${r.n?`<span class="tag ${isObs(r)?'old':'new'}">${esc(r.n)}</span>`:''}</td>
+    <td class="r">${u?`<a href="#map" data-m="${esc(r.p)}">${u} doc${u>1?'s':''}</a>`:'–'}</td></tr>`}).join('');
+  $('rnote').textContent=`${rows.length} of ${all.length} part numbers`;
+}
+['rq','rg'].forEach(id=>$(id).addEventListener('input',renderRef));
+$('rtb').addEventListener('click',e=>{const a=e.target.closest('[data-m]');if(a){$('mq').value=a.dataset.m;renderMap()}});
+
+/* ---------- sources ---------- */
+function renderSrc(){
+  $('srb').innerHTML=[...SRC.values()].sort((a,b)=>a.no.localeCompare(b.no)).map(s=>`<tr><td class="pn">${esc(s.no)}</td><td>${esc(s.f)}</td><td>${esc(s.t)}</td><td>${esc(s.mt)}</td><td>${esc(s.pn)}</td><td>${esc(s.dd)}</td><td>${esc(s.by)}</td><td class="r">${esc(s.pg)}</td><td class="r">${esc(s.ln)}</td><td class="r">${esc(s.u)}</td><td>${esc(s.imp)}</td></tr>`).join('');
+}
+const cleanName=f=>f.replace(/^[0-9a-f]{8}-(?=\d)/i,'');
+function findSrc(v){v=v.trim().toLowerCase();if(!v)return null;
+  return [...SRC.values()].find(s=>s.no.toLowerCase()===v||s.f.toLowerCase()===v||cleanName(v)===s.f.toLowerCase()||v.includes(s.no.toLowerCase()))||null}
+$('chkf').addEventListener('submit',e=>{e.preventDefault();const hit=findSrc($('chk').value);
+  $('chkmsg').innerHTML=!$('chk').value.trim()?'':hit?`<div class="alert bad">Duplicate: already imported on ${esc(hit.imp)} — ${esc(hit.no)} · ${esc(hit.pn)} (${esc(hit.f)})</div>`
+   :`<div class="alert good">Not imported yet. This is a new document.</div>`});
+
+/* ---------- map ---------- */
+function renderMap(){
+  const q=$('mq').value.trim().toLowerCase();
+  const rows=MAP.filter(m=>!q||m[0].toLowerCase().includes(q)||m[1].toLowerCase().includes(q));
+  $('mtb').innerHTML=rows.map(m=>{const r=REF.get(m[0]),s=SRC.get(m[1]);
+   return `<tr><td class="pn">${esc(m[0])}</td><td>${esc(r?r.d:'')}</td><td>${esc(m[1])}</td><td>${esc(s?s.pn:'')}</td><td>${esc(m[2])}</td><td class="r">${esc(m[3])}</td></tr>`}).join('');
+  $('mnote').textContent=`${rows.length} of ${MAP.length} rows`;
+}
+$('mq').addEventListener('input',renderMap);
+
+/* ---------- import reference file (etk-e1 PDF, Developer) ---------- */
+const PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const loadJs=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('Could not load the PDF reader (needs internet).'));document.head.appendChild(s)});
+let pdfReady=null;
+const getPdf=()=>pdfReady||(pdfReady=(async()=>{await loadJs(PDFJS+'pdf.min.js');
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js';return window.pdfjsLib})().catch(e=>{pdfReady=null;throw e}));
+async function pdfLines(buf){
+  const lib=await getPdf();const pdf=await lib.getDocument({data:buf}).promise;const out=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const tc=await (await pdf.getPage(p)).getTextContent();
+    const items=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str,x:i.transform[4],y:i.transform[5],w:i.width}));
+    items.sort((a,b)=>b.y-a.y||a.x-b.x);
+    const rows=[];
+    for(const it of items){const last=rows[rows.length-1];if(last&&Math.abs(last[0].y-it.y)<=3)last.push(it);else rows.push([it])}
+    for(const r of rows){r.sort((a,b)=>a.x-b.x);let s='',end=null;
+      for(const it of r){if(end!==null){const gap=it.x-end;s+=gap>6?'   ':gap>0.8?' ':''}s+=it.s;end=it.x+it.w}
+      out.push(s.trim())}
+  }
+  return {lines:out,pages:pdf.numPages};
+}
+const ENT=/^(\d+,\d+)\s+([ABC])\s+(.*?)\s*(\d{8})\s+(?:(\d{8})\s+)?(\d+)\s+(\d+\s+[A-Za-z]+)\s+(.+)$/;
+const SKIP=/(etk.*\d+\s*\/\s*\d+\s*$)|(^\d+\s*\/\s*\d+$)/;
+function parseEtk(lines){
+  const st=lines.findIndex(l=>/^Position\s+ABC/.test(l));if(st<0)throw new Error('Not a WIPOTEC spare parts catalogue (no "Position ABC" table found).');
+  const meta={};
+  for(const l of lines.slice(0,st))for(const [k,key] of [['Type','mt'],['Project name','pn'],['Commission number','no'],['Delivery date','dd'],['Created by','by']]){
+    const m=l.match(new RegExp('^'+k+':\\s*(.+)'));if(m&&!meta[key])meta[key]=m[1].trim()}
+  const parts=[];let cur=null,pend=[];
+  for(const l of lines.slice(st+1)){
+    if(!l||SKIP.test(l)||/^Position\s+ABC/.test(l))continue;
+    const m=l.match(ENT);
+    if(m){const major=m[1].split(',')[0];let sec=null;
+      if(!cur||cur.major!==major){if(pend.length)sec=pend.pop()}
+      if(cur)cur.desc.push(...pend);pend=[];
+      cur={pos:m[1].replace(',','.'),major,abc:m[2],nom:m[3].trim(),id:m[4],qty:+m[6],desc:[],sec};parts.push(cur)}
+    else pend.push(l)}
+  if(cur)cur.desc.push(...pend);
+  if(!parts.length)throw new Error('No part lines found in this file.');
+  const secs=new Set(parts.filter(p=>p.sec).map(p=>p.sec.toLowerCase()));
+  const norm=c=>{c=c.trim().replace(/\s+\d+$/,'').replace('Display-/Operatingterminal','Display-/Operating terminal');return c.charAt(0).toUpperCase()+c.slice(1)};
+  let sec='';
+  for(const p of parts){if(p.sec)sec=norm(p.sec);p.cat=sec;
+    let d=p.desc.filter(x=>!secs.has(x.toLowerCase())&&!/^weigh cell \d$/i.test(x)).map(x=>x.replace(/\s{2,}/g,' '));
+    d=d.filter((x,i)=>d.indexOf(x)===i);
+    let name=p.nom||d.shift()||'';
+    if(d.length&&(/^[a-z]/.test(d[0])||/^\d+\s?mm$/.test(d[0]))&&!d[0].includes(':'))name+=' '+d.shift();
+    const j=[];for(const x of d){if(j.length&&/^[a-z+]/.test(x)&&!x.startsWith('- '))j[j.length-1]+=' '+x;else j.push(x)}
+    p.name=name.replace(/,$/,'');p.det=j.join('\n')}
+  return {meta,parts};
+}
+async function importFiles(files){
+  const msgs=[];
+  for(const f of files){
+    const fname=cleanName(f.name);
+    try{
+      const dupF=[...SRC.values()].find(s=>s.f.toLowerCase()===fname.toLowerCase());
+      let body={fname};
+      if(!dupF){const {lines,pages}=await pdfLines(await f.arrayBuffer());const {meta,parts}=parseEtk(lines);
+        body={fname,meta,pages,parts:parts.map(p=>({id:p.id,name:p.name,det:p.det,abc:p.abc,cat:p.cat,pos:p.pos,qty:p.qty}))}}
+      const r=await api('POST','/api/spare/import',body);
+      msgs.push(['good',r.message]);
+    }catch(err){msgs.push(['bad',err.message.startsWith(fname)?err.message:`${fname}: ${err.message||err}`])}
+    await load();
+  }
+  document.querySelectorAll('.impmsg').forEach(el=>el.innerHTML=msgs.map(([k,t])=>`<div class="alert ${k}">${esc(t)}</div>`).join(''));
+  renderAll();
+}
+document.querySelectorAll('.imp').forEach(b=>b.addEventListener('click',()=>$('impf').click()));
+$('impf').addEventListener('change',async e=>{const fs=[...e.target.files];e.target.value='';if(fs.length){
+  document.querySelectorAll('.impmsg').forEach(el=>el.innerHTML='<div class="alert good">Reading file…</div>');importFiles(fs)}});
+
+/* ---------- tabs ---------- */
+const views=['stock','reference','sources','map','requests','history'];
+function show(){const v=views.includes(location.hash.slice(1))?location.hash.slice(1):'stock';
+  views.forEach(x=>$('v-'+x).classList.toggle('hide',x!==v));
+  document.querySelectorAll('.tabs [data-v]').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));
+  if(v==='history')renderHist();
+  if(v==='requests'){renderReq();partInfo()}
+  const refV={reference:'Part Reference',sources:'Source Log',map:'Part Source Map'};
+  $('ddl').textContent=refV[v]?'Reference: '+refV[v]:'Reference data';$('ddb').setAttribute('aria-current',String(!!refV[v]));
+}
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b){location.hash=b.dataset.v;ddClose()}});
+const ddClose=()=>{$('ddm').classList.add('hide');$('ddb').setAttribute('aria-expanded','false')};
+$('ddb').addEventListener('click',e=>{e.stopPropagation();const open=$('ddm').classList.toggle('hide');$('ddb').setAttribute('aria-expanded',String(!open));if(!open)$('ddm').querySelector('button').focus()});
+document.addEventListener('click',e=>{if(!e.target.closest('#dd'))ddClose()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')ddClose()});
+addEventListener('hashchange',show);
+function renderAll(){renderStock();renderRef();renderSrc();renderMap();
+  if(!$('v-requests').classList.contains('hide')){renderReq();partInfo()}if(!$('v-history').classList.contains('hide'))renderHist()}
+
+/* Pick up changes made by others (e.g. on a shared server) when the window comes back into view. */
+document.addEventListener('visibilitychange',async()=>{if(document.hidden||modalOpen||formDirty())return;try{await load();renderAll()}catch(e){}});
+
+(async()=>{
+  try{await load();$('loadmsg').classList.add('hide');renderAll();show()}
+  catch(err){$('loadmsg').innerHTML=`<div class="alert bad">${esc(err.message)}</div>`}
+})();
+}
+</script>
+</body>
+</html>
