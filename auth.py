@@ -68,6 +68,14 @@ def verify_password(password: str, stored: str) -> bool:
         return False
 
 
+TEMP_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"  # no 0/O, 1/l/I
+
+
+def temp_password() -> str:
+    """Random temporary password such as 'Kq7m-Xa3P-w9Rt' (easy to read out)."""
+    return "-".join("".join(secrets.choice(TEMP_ALPHABET) for _ in range(4)) for _ in range(3))
+
+
 def normalize_username(name: str) -> str:
     return (name or "").strip().lower()
 

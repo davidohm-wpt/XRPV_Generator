@@ -28,6 +28,8 @@
     .card.tool { border-top-color: #58595b; }
     .card.tool .code, .card.tool .go { color: #58595b; }
     a.card.tool:hover { box-shadow: 0 6px 16px rgba(60,60,60,.18); }
+    .card.admin { border-top-color: #b26a00; }
+    .card.admin .code, .card.admin .go { color: #b26a00; }
     .foot { text-align: center; font-size: 10px; color: #aaa; margin-top: 26px; }
     @media (max-width: 800px) { .cards, .cards.tools { grid-template-columns: 1fr; } }
   </style>
@@ -94,11 +96,27 @@
       <span class="go">Open tool &rarr;</span>
     </a>
   </div>
+  <div id="admin" style="display:none">
+    <div class="section">Admin</div>
+    <div class="sub">Developers only.</div>
+    <div class="cards tools">
+      <a class="card admin" href="/admin/users">
+        <span class="code">Admin</span>
+        <h3>User Accounts</h3>
+        <p>Add users, reset passwords, set roles (User / Supervisor / Developer), disable accounts and send the changes to the team.</p>
+        <span class="go">Open &rarr;</span>
+      </a>
+    </div>
+  </div>
   <div class="foot" id="foot">WIPOTEC AIO Software</div>
 </div>
 <script>
   fetch('/version').then(r => r.json()).then(d => {
     if (d && d.version) document.getElementById('foot').textContent = 'WIPOTEC AIO Software \u00b7 v' + d.version;
+  }).catch(() => {});
+  /* The Admin section is only for Developers (the server checks this too). */
+  fetch('/api/me', {cache: 'no-store'}).then(r => r.ok ? r.json() : null).then(me => {
+    if (me && me.role === 'developer') document.getElementById('admin').style.display = '';
   }).catch(() => {});
 </script>
 <script>

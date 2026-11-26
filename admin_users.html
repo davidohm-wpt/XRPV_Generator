@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Accounts - WIPOTEC AIO Software</title>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f4f7f6; color: #333; }
+  .container { max-width: 1000px; margin: auto; background: #fff; padding: 26px 30px 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+  .head { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #008080; padding-bottom: 12px; margin-bottom: 16px; }
+  .head h2 { color: #008080; margin: 0; flex: 1; }
+  .home { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 18px; background: #008080; color: #fff; font-weight: 600; text-decoration: none; }
+  .home:hover { background: #006d6d; }
+  .sub { color: #666; font-size: 14px; margin: 0 0 18px; }
+  .banner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 8px; padding: 12px 16px; margin: 0 0 18px; }
+  .banner.pending { background: #fff4e0; border: 1px solid #f0c27a; color: #7a4b00; }
+  .banner.ok { background: #e6f4ee; border: 1px solid #b7dcc9; color: #1e6b45; }
+  .banner.off { background: #f1f3f3; border: 1px solid #d5dddd; color: #555; }
+  .banner span { flex: 1; min-width: 240px; }
+  .card { border: 1px solid #d5e3e3; border-radius: 8px; padding: 16px 18px; margin: 0 0 20px; background: #fafdfd; }
+  .card h3 { margin: 0 0 12px; font-size: 16px; color: #1a1a1a; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #555; }
+  input, select { font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid #c9d6d6; border-radius: 6px; background: #fff; }
+  input:focus, select:focus { outline: none; border-color: #008080; box-shadow: 0 0 0 3px rgba(0,128,128,.15); }
+  .btn { font: inherit; font-size: 14px; font-weight: 600; border: 0; border-radius: 6px; padding: 9px 16px; cursor: pointer; background: #008080; color: #fff; }
+  .btn:hover { background: #006d6d; }
+  .btn.ghost { background: #e2f0f0; color: #006666; }
+  .btn.ghost:hover { background: #d2e8e8; }
+  .btn.red { background: #b02a37; }
+  .btn.red:hover { background: #8f1f2b; }
+  .btn.small { padding: 5px 10px; font-size: 13px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; background: #008080; color: #fff; padding: 8px 10px; font-weight: 600; }
+  td { padding: 8px 10px; border-top: 1px solid #e3eaea; vertical-align: middle; }
+  tr.off td { color: #999; background: #f8f8f8; }
+  td.acts { white-space: nowrap; text-align: right; }
+  td.acts .btn { margin-left: 4px; }
+  .tag { display: inline-block; border-radius: 10px; padding: 1px 9px; font-size: 12px; font-weight: 700; }
+  .tag.on { background: #dff3e6; color: #1b6b38; } .tag.dis { background: #eceff1; color: #5b6b6b; }
+  .tag.me { background: #e2f0f0; color: #006666; margin-left: 6px; }
+  .muted { color: #888; font-size: 12px; }
+  .msg { border-radius: 8px; padding: 10px 14px; margin: 0 0 14px; font-size: 14px; }
+  .msg.bad { background: #fbeaec; color: #b02a37; } .msg.good { background: #e6f4ee; color: #1e6b45; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .box { background: #fff; border-radius: 10px; max-width: 460px; width: 100%; padding: 22px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+  .box h3 { margin: 0 0 10px; }
+  .box .acts { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+  .pw { font: 600 24px Consolas, monospace; letter-spacing: 1px; background: #f2f7f7; border: 1px dashed #8fb9b9; border-radius: 8px; padding: 12px; text-align: center; margin: 10px 0; user-select: all; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="head">
+    <h2>User Accounts</h2>
+    <a class="home" href="/">&#8962; Home</a>
+  </div>
+  <p class="sub">Sign-in accounts of WIPOTEC AIO Software. Only Developers see this page. Changes take effect on this PC at once; press <b>Send to team</b> so every PC gets them.</p>
+
+  <div id="banner" class="banner off"><span>Checking…</span></div>
+  <div id="msg"></div>
+
+  <div class="card">
+    <h3>Add a user</h3>
+    <form class="row" id="addf">
+      <label class="f">Username<input id="a_u" placeholder="e.g. john.smith" autocomplete="off" required></label>
+      <label class="f" style="flex:1;min-width:200px">Full name<input id="a_n" placeholder="e.g. John Smith" autocomplete="off"></label>
+      <label class="f">Role<select id="a_r"><option value="user">User</option><option value="supervisor">Supervisor</option><option value="developer">Developer</option></select></label>
+      <button class="btn" type="submit">Add user</button>
+    </form>
+    <p class="muted" style="margin:10px 0 0">User: sends requests · Supervisor: also approves requests · Developer: everything, including this page.
+    A temporary password is created; the user chooses their own at the first sign-in.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Password</th><th></th></tr></thead>
+    <tbody id="tb"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+<div class="modal hide" id="modal"><div class="box"><h3 id="mt"></h3><div id="mb"></div><div class="acts" id="ma"></div></div></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ROLE = {user: 'User', supervisor: 'Supervisor', developer: 'Developer'};
+let ME = '';
+
+async function api(method, url, body) {
+  const o = {method, headers: {}, cache: 'no-store'};
+  if (body !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(body); }
+  const r = await fetch(url, o);
+  let d = null; try { d = await r.json(); } catch (e) {}
+  if (r.status === 401) { location.href = '/login?next=%2Fadmin%2Fusers'; throw new Error('Please sign in again.'); }
+  if (r.status === 403) { location.href = '/'; throw new Error('Developers only.'); }
+  if (!r.ok) throw new Error(typeof (d && d.detail) === 'string' ? d.detail : 'Error ' + r.status);
+  return d;
+}
+function say(text, good) { $('msg').innerHTML = text ? `<div class="msg ${good ? 'good' : 'bad'}">${esc(text)}</div>` : ''; }
+
+function modal(title, html, acts) {
+  $('mt').textContent = title; $('mb').innerHTML = html;
+  return new Promise(res => {
+    $('ma').innerHTML = acts.map((a, i) => `<button type="button" class="btn ${a.cls || ''}" data-k="${i}">${esc(a.t)}</button>`).join('');
+    $('modal').classList.remove('hide');
+    $('ma').onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; const a = acts[+b.dataset.k];
+      if (a.keep) { a.keep(b); return; } $('modal').classList.add('hide'); res(a.v); };
+  });
+}
+function showTemp(user, pw, what) {
+  return modal(what, `<p>Give these to <b>${esc(user)}</b>. The password is shown only now:</p>
+    <div>Username: <b>${esc(user)}</b></div><div class="pw">${esc(pw)}</div>
+    <p class="muted">They choose their own password at the first sign-in. Press <b>Send to team</b> so their PC knows the account.</p>`,
+    [{t: 'Copy', cls: 'ghost', keep: b => { navigator.clipboard.writeText(`Username: ${user}\nTemporary password: ${pw}`).then(() => b.textContent = 'Copied'); }},
+     {t: 'Done', v: true}]);
+}
+
+function render(d) {
+  ME = d.me;
+  const p = d.publish;
+  const bn = $('banner');
+  if (!p.can) { bn.className = 'banner off'; bn.innerHTML = `<span>${esc(p.why)}${p.pending ? ' Changes are saved on this PC only.' : ''}</span>`; }
+  else if (p.pending) { bn.className = 'banner pending'; bn.innerHTML = `<span><b>Not sent yet.</b> The team does not have these account changes. (This PC also skips program updates until they are sent.)</span><button class="btn" id="pub">Send to team</button>`; }
+  else { bn.className = 'banner ok'; bn.innerHTML = `<span>The team has the current accounts.</span>`; }
+  $('pub')?.addEventListener('click', publish);
+
+  $('tb').innerHTML = d.users.map(u => {
+    const me = u.username === ME;
+    return `<tr class="${u.active ? '' : 'off'}" data-u="${esc(u.username)}">
+      <td><b>${esc(u.username)}</b>${me ? '<span class="tag me">you</span>' : ''}</td>
+      <td>${esc(u.name)}</td>
+      <td><select data-role ${me ? 'disabled title="You cannot change your own role"' : ''}>${Object.entries(ROLE).map(([k, v]) => `<option value="${k}"${k === u.role ? ' selected' : ''}>${v}</option>`).join('')}</select></td>
+      <td>${u.active ? '<span class="tag on">Active</span>' : '<span class="tag dis">Disabled</span>'}</td>
+      <td class="muted">${u.ownPassword ? 'Own password set (this PC)' : 'Temporary password'}</td>
+      <td class="acts">
+        <button class="btn ghost small" data-act="reset">Reset password</button>
+        ${me ? '' : (u.active ? '<button class="btn ghost small" data-act="disable">Disable</button>' : '<button class="btn ghost small" data-act="enable">Enable</button>')}
+        ${me ? '' : '<button class="btn red small" data-act="delete">Delete</button>'}
+      </td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="muted">No accounts.</td></tr>';
+}
+async function load() { render(await api('GET', '/api/admin/users')); }
+
+$('addf').addEventListener('submit', async e => {
+  e.preventDefault(); say('');
+  try {
+    const r = await api('POST', '/api/admin/users', {username: $('a_u').value, name: $('a_n').value, role: $('a_r').value});
+    $('addf').reset(); await load(); await showTemp(r.username, r.temp, 'User added');
+  } catch (err) { say(err.message); }
+});
+
+$('tb').addEventListener('change', async e => {
+  const sel = e.target.closest('[data-role]'); if (!sel) return;
+  const u = sel.closest('tr').dataset.u; say('');
+  try { await api('POST', `/api/admin/users/${encodeURIComponent(u)}/role`, {role: sel.value}); say(`${u} is now ${ROLE[sel.value]}.`, true); }
+  catch (err) { say(err.message); }
+  await load();
+});
+
+$('tb').addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const u = b.closest('tr').dataset.u, act = b.dataset.act; say('');
+  try {
+    if (act === 'reset') {
+      if (!await modal('Reset password', `<p>Give <b>${esc(u)}</b> a new temporary password? Their current password stops working (on every PC once you send the change).</p>`, [{t: 'Cancel', cls: 'ghost', v: false}, {t: 'Reset password', v: true}])) return;
+      const r = await api('POST', `/api/admin/users/${encodeURIComponent(u)}/reset`); await load(); await showTemp(u, r.temp, 'New temporary password');
+    } else if (act === 'disable' || act === 'enable') {
+      const on = act === 'enable';
+      if (!on && !await modal('Disable account', `<p><b>${esc(u)}</b> will not be able to sign in. You can enable the account again later.</p>`, [{t: 'Cancel', cls: 'ghost', v: false}, {t: 'Disable', cls: 'red', v: true}])) return;
+      await api('POST', `/api/admin/users/${encodeURIComponent(u)}/active`, {active: on}); say(`${u} is ${on ? 'enabled' : 'disabled'}.`, true); await load();
+    } else if (act === 'delete') {
+      if (!await modal('Delete account', `<p>Delete <b>${esc(u)}</b>? This cannot be undone - to keep their history readable, <i>Disable</i> is usually better.</p>`, [{t: 'Cancel', cls: 'ghost', v: false}, {t: 'Delete', cls: 'red', v: true}])) return;
+      await api('POST', `/api/admin/users/${encodeURIComponent(u)}/delete`); say(`${u} was deleted.`, true); await load();
+    }
+  } catch (err) { say(err.message); await load(); }
+});
+
+async function publish() {
+  const b = $('pub'); b.disabled = true; b.textContent = 'Sending…'; say('');
+  try { const r = await api('POST', '/api/admin/publish'); say(r.message, true); }
+  catch (err) { say(err.message); }
+  await load();
+}
+
+load().catch(err => say(err.message));
+</script>
+</body>
+</html>

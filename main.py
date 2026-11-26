@@ -110,6 +110,7 @@ from xray_installation import router as xriq_router  # X-Ray Installation & Qual
 import auth  # sign-in (users.json + local_accounts.json)
 from xray_compare import router as xr_compare_router  # X-Ray Comparison tool (Tools section)
 from spare_part import router as spare_part_router  # Spare Part On Hand (Tools section)
+from admin_users import router as admin_users_router  # User Accounts page (Admin section, Developers only)
 
 # --- Logging setup ---
 LOG_PATH = BASE_DIR / "pv_server.log"
@@ -131,6 +132,7 @@ app.include_router(xriq_router)
 app.include_router(auth.router)
 app.include_router(xr_compare_router)
 app.include_router(spare_part_router)
+app.include_router(admin_users_router)
 
 
 # ============================================================
@@ -214,7 +216,7 @@ async def no_cache_for_pages(request, call_next):
     and add the heartbeat script used by the auto-exit (plus the signed-in user box)."""
     response = await call_next(request)
     path = request.url.path
-    tool_page = path.startswith(("/xr-compare/", "/spare-part/"))
+    tool_page = path.startswith(("/xr-compare/", "/spare-part/", "/admin/"))
     if path == "/" or path.endswith(".html") or path in ("/login", "/set-password") or tool_page:
         response.headers["Cache-Control"] = "no-store"
         if response.headers.get("content-type", "").startswith("text/html"):
