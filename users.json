@@ -19,7 +19,7 @@
       "active": true,
       "reset": 1,
       "temp": "pbkdf2_sha256$200000$798fe4f4f7bed52e1cfd7f9f6933a400$797a9a5452133add6ba13129fdfc3d1dc09e44470cbd2049175105ac7ee954ed",
-      "role": "user"
+      "role": "supervisor"
     }
   }
 }
